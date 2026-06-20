@@ -1,230 +1,91 @@
-# SentraGuard AgentOps - Setup Progress Report
+# SentraGuard AgentOps — Setup Progress Report
 
-**Date:** 2026-06-20  
-**Status:** Phase 1 Backend Foundation - COMPLETED ✅
-
----
-
-## ✅ Completed Tasks
-
-### 1. Project Initialization
-- ✅ Repository cloned to `/var/www/sentraguard`
-- ✅ Laravel 13.16.1 installed in `dashboard/` directory
-- ✅ PHP 8.4.21 + Composer 2.9.8 verified
-- ✅ Node.js 22.22.3 + NPM 10.9.8 verified
-- ✅ Livewire 3.8.1 installed
-
-### 2. Environment Configuration
-- ✅ `.env` configured for SentraGuard
-  - App Name: "SentraGuard AgentOps"
-  - App URL: http://localhost:8001
-  - Timezone: Asia/Jakarta
-  - Database: syahrul1_sentraguard (MySQL on 127.0.0.1)
-  - Agent configuration defaults set
-
-### 3. Database Schema (7 Migrations Created)
-- ✅ `create_servers_table.php` - Server inventory management
-- ✅ `create_agents_table.php` - Agent lifecycle and status
-- ✅ `create_server_services_table.php` - Windows Services inventory
-- ✅ `create_service_commands_table.php` - Command queue with atomic pickup
-- ✅ `create_server_metrics_table.php` - CPU/RAM/Disk metrics storage
-- ✅ `create_audit_logs_table.php` - Immutable audit trail
-- ✅ `create_roles_and_permissions_tables.php` - RBAC implementation
-
-### 4. Eloquent Models (9 Models Created)
-- ✅ `Server.php` - with relationships (agent, services, commands, metrics, auditLogs)
-- ✅ `Agent.php` - with heartbeat(), revoke(), isOnline() methods
-- ✅ `ServerService.php` - with allow(), disallow() methods
-- ✅ `ServiceCommand.php` - with status transition methods (markPicked, markSuccess, etc)
-- ✅ `ServerMetric.php` - with computed attributes (ramPercent, diskPercent)
-- ✅ `AuditLog.php` - with static log() helper method
-- ✅ `Role.php` - with hasPermission(), givePermissionTo() methods
-- ✅ `Permission.php` - simple permission model
-- ✅ `User.php` - extended with RBAC methods (hasPermission, hasRole, isSuperAdmin, isAdmin)
-
-### 5. Database Seeders (2 Seeders Created)
-- ✅ `RolePermissionSeeder.php`
-  - 26 permissions across 9 groups (dashboard, servers, services, commands, metrics, audit, users, roles, settings)
-  - 4 roles: Super Admin, Admin, Operator, Viewer
-  - Permission assignments per role (RBAC matrix implemented)
-- ✅ `UserSeeder.php`
-  - Default Super Admin user: admin@sentraguard.local / password
-- ✅ `DatabaseSeeder.php` - updated to call both seeders
-
-### 6. Configuration Files
-- ✅ `config/agent.php` - Agent configuration defaults and retention policies
+**Date:** 2026-06-20
+**Status:** Phases 1–5 COMPLETE ✅ — dashboard, agent API, UI, Go Windows agent, installer + docs all done and verified. Only blocker: production MySQL database creation (needs panel/root access).
 
 ---
 
-## ⏳ Pending Tasks (Requires Manual Action)
+## Phase Status
 
-### Database Creation
-**ACTION REQUIRED:** Create MySQL database manually via cPanel/DirectAdmin
-- Database name: `syahrul1_sentraguard`
-- Database user: `syahrul1_sentraguard` (same as MejaHR user if possible)
-- Grant all privileges on `syahrul1_sentraguard.*`
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Backend foundation (migrations, models, RBAC seeders) | ✅ Done |
+| 2 | Agent API (Sanctum, 7 endpoints, services, middleware) | ✅ Done |
+| 3 | Dashboard UI (4-system design fusion, Livewire) | ✅ Done |
+| 4 | Go Windows agent (SCM, metrics, executor, DPAPI) | ✅ Done |
+| 5 | Inno Setup installer + deployment docs | ✅ Done |
 
-After database is created, run:
-```bash
-cd /var/www/sentraguard/dashboard
-php artisan migrate --seed
+---
+
+## Phase 1 — Backend Foundation ✅
+- Laravel 13.16.1 in `dashboard/`, PHP 8.4.21, Composer 2.9.8, Node 22, Livewire 3.8.1
+- 11 migrations (servers, agents, server_services, service_commands, server_metrics, audit_logs, roles/permissions pivots + sanctum)
+- 9 Eloquent models with relationships + domain methods
+- RBAC seeders: 4 roles, 26 permissions, Super Admin (`admin@sentraguard.local` / `password`)
+
+## Phase 2 — Agent API ✅
+- Sanctum installed, `routes/api.php` registered
+- 7 agent endpoints: register, heartbeat, commands/poll, commands/{id}/result, services/sync, metrics, service-events
+- Service layer: `AgentTokenService` (bcrypt), `CommandService` (atomic `lockForUpdate` pickup), agent Bearer-token middleware
+- Console commands: stale-command timeout + metric pruning, scheduled in `routes/console.php`
+- **Verified:** agent API lifecycle 14/14 PASS (register, token-reuse reject, auth enforce, heartbeat, metrics, sync, atomic pickup no-dup, allowlist enforce, result, events, revoke)
+
+## Phase 3 — Dashboard UI ✅
+- Design fusion: Swiss/International foundation + Neo-brutalism character + Glassmorphism (sidebar/topbar) + Neumorphism (inputs/tiles). Fonts: Space Grotesk + Space Mono.
+- Custom lightweight auth (no Breeze), DashboardController, web routes with route-model binding
+- Livewire components: ServerList, ServerDetail, CommandQueue, AuditLogViewer (+ index views)
+- `npm run build` clean (fonts + ~53KB CSS)
+- **Verified visually:** login + dashboard render all 4 systems; servers list; detail tabs incl. SERVICES (allowlisted service shows START/STOP/RESTART, others locked); RESTART via UI queued a PENDING command
+
+## Phase 4 — Go Windows Agent ✅
+- Go 1.22 installed at `/usr/local/go-1.22` (system Go untouched)
+- Packages: config (YAML), api (HTTPS client), metrics (gopsutil), services (Windows SCM via svc/mgr), executor (PowerShell + allowlist guard), token (DPAPI + dev file fallback), logging (rotation), agent runtime (4 loops), cmd (CLI + SCM entrypoint)
+- Build-tag isolation (Windows vs Linux dev)
+- **Verified:** `go vet` clean; cross-compiles to **Windows amd64 PE32+** (7.1 MB) and Linux dev; CLI runs
+- `agent/build.sh` + `agent/README.md` for reproducible builds
+
+## Phase 5 — Installer & Docs ✅
+- `installer/inno-setup/SentraGuardAgent.iss` → builds `SentraGuardAgentSetup.exe`
+  - Interactive wizard (Dashboard URL + enrollment token) **and** silent install (`/SILENT /server= /token=`) for GPO/RMM
+  - Post-install runs `sentraguard-agent.exe install`, registers + starts `SentraGuard Agent Service`
+  - Uninstaller stops/removes the service
+- `installer/inno-setup/README.md` — how to compile with ISCC
+- `docs/DEPLOYMENT.md` — full operator guide (dashboard install, DB, Redis isolation, agent onboarding, allowlist, config reference, troubleshooting, security checklist)
+
+---
+
+## ⏳ Remaining (blocked / out of scope)
+
+### Database creation — ONLY blocker for production
+`syahrul1_sentraguard` MySQL database must be created via cPanel/DirectAdmin/root
+(the MejaHR app user lacks `CREATE DATABASE`; resetting MariaDB root would disrupt
+MejaHR production). All code is verified against a throwaway SQLite env instead.
+
+```sql
+CREATE DATABASE syahrul1_sentraguard CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'syahrul1_sentraguard'@'localhost' IDENTIFIED BY '***';
+GRANT ALL PRIVILEGES ON syahrul1_sentraguard.* TO 'syahrul1_sentraguard'@'localhost';
+FLUSH PRIVILEGES;
 ```
+Then: `php artisan migrate --seed --force`
+
+### Nice-to-have (future)
+- WiX MSI build (dir reserved at `installer/wix/`)
+- Docker Compose for dashboard
+- Realtime via WebSocket/SSE, signed/notarized agent binary
 
 ---
 
-## 📋 Next Phase - Backend APIs & Services
+## Isolation from MejaHR (verified)
+- DB: `syahrul1_sentraguard` vs `syahrul1_mejahr`
+- Redis: db3/db4 + unique prefix vs MejaHR db0/db1 (isolation verified — MejaHR keys untouched)
+- Directory: `/var/www/sentraguard` vs `/var/www/mejahr`
 
-### Phase 2: API Endpoints for Agent Communication
-- [ ] `POST /api/agent/register` - Agent self-registration
-- [ ] `POST /api/agent/heartbeat` - Periodic liveness signal
-- [ ] `GET /api/agent/commands/poll` - Atomic command pickup with `lockForUpdate()`
-- [ ] `POST /api/agent/commands/{id}/result` - Submit command result
-- [ ] `POST /api/agent/services/sync` - Sync Windows Services list
-- [ ] `POST /api/agent/metrics` - Post CPU/RAM/Disk metrics
-- [ ] `POST /api/agent/service-events` - Proactive service state change
-
-### Phase 3: Dashboard Web APIs
-- [ ] Server CRUD endpoints
-- [ ] Service allowlist management
-- [ ] Command creation (start/stop/restart/enable/disable)
-- [ ] Metrics retrieval (latest + historical)
-- [ ] Audit log viewer
-
-### Phase 4: Services & Business Logic
-- [ ] `AgentTokenService` - Generate/validate registration tokens (bcrypt)
-- [ ] `CommandService` - Queue commands, atomic pickup, timeout handling
-- [ ] `AuditService` - Centralized audit logging helper
-- [ ] `MetricsService` - Data aggregation and retention pruning
-- [ ] Scheduled command: `php artisan metrics:prune` (daily cleanup)
-
-### Phase 5: Dashboard UI (Livewire Components)
-- [ ] Authentication scaffolding (Laravel Breeze or custom)
-- [ ] Dashboard overview page (stat cards, charts)
-- [ ] Server list & detail pages
-- [ ] Service management UI with allowlist toggle
-- [ ] Real-time metrics charts (`wire:poll.10000ms`)
-- [ ] Command history table
-- [ ] Audit log viewer with filters
-
-### Phase 6: Go Windows Agent
-- [ ] Initialize Go module in `agent/` directory
-- [ ] Registration flow with one-time token
-- [ ] Heartbeat loop (every 30s)
-- [ ] Metrics collector using `gopsutil` (every 15s)
-- [ ] Command poller with atomic pickup (every 5s)
-- [ ] Predefined PowerShell executor (safe actions only)
-- [ ] Proactive service monitor (every 30s)
-- [ ] Windows Service wrapper (`golang.org/x/sys/windows/svc`)
-- [ ] DPAPI token storage (Windows Credential Manager)
-- [ ] Build `sentraguard-agent.exe`
-
-### Phase 7: Installer & Deployment
-- [ ] Inno Setup installer with silent install support
-- [ ] Docker Compose for dashboard deployment
-- [ ] Nginx configuration with SSL
-- [ ] Supervisor config for queue workers
-- [ ] Documentation: installation, agent deployment, API reference
+## Default credentials (CHANGE IN PRODUCTION)
+`admin@sentraguard.local` / `password`
 
 ---
 
-## 📊 Project Statistics
-
-| Metric | Count |
-|--------|-------|
-| Migrations | 7 |
-| Models | 9 |
-| Seeders | 2 |
-| Permissions | 26 |
-| Roles | 4 |
-| Total PHP Files | 119 |
-
----
-
-## 🔐 Security Implementation Status
-
-- ✅ bcrypt token hashing for registration tokens
-- ✅ Runtime token storage (will use Windows DPAPI in agent)
-- ✅ RBAC matrix implemented (4 roles, 26 permissions)
-- ✅ Audit logging structure ready (immutable logs)
-- ✅ Service allowlist enforcement at database level
-- ✅ Command timeout configuration
-- ⏳ API authentication (pending - will use Bearer tokens)
-- ⏳ Atomic command pickup with `lockForUpdate()` (pending implementation)
-- ⏳ HTTPS enforcement (pending Nginx config)
-
----
-
-## 📁 Directory Structure
-
-```
-/var/www/sentraguard/
-├── dashboard/              ✅ Laravel 13 application
-│   ├── app/
-│   │   └── Models/        ✅ 9 Eloquent models
-│   ├── config/
-│   │   └── agent.php      ✅ Agent configuration
-│   ├── database/
-│   │   ├── migrations/    ✅ 7 schema migrations
-│   │   └── seeders/       ✅ 2 seeders
-│   ├── .env               ✅ Configured for SentraGuard
-│   └── composer.json      ✅ Livewire 3 installed
-├── agent/                 ⏳ Pending - Go agent
-├── installer/             ⏳ Pending - Inno Setup
-├── docs/                  ⏳ Pending - Documentation
-└── README.md              ✅ Original project documentation
-
-```
-
----
-
-## ⚠️ Important Notes
-
-1. **Database Creation Required:** The MySQL database `syahrul1_sentraguard` must be created manually before running migrations.
-
-2. **No Conflict with MejaHR:** 
-   - Separate database: `syahrul1_sentraguard` vs `syahrul1_mejahr`
-   - Different app URL: `localhost:8001` vs `mejahr.web.id`
-   - Isolated Laravel installation in separate directory
-
-3. **Default Credentials (CHANGE IN PRODUCTION):**
-   - Email: `admin@sentraguard.local`
-   - Password: `password`
-
-4. **Redis Setup:** Not yet configured. Required for:
-   - Cache and sessions
-   - Queue backend for async jobs
-   - Real-time features (optional)
-
-5. **Go Agent Development:** Requires Go 1.22+ and Windows development environment for building `.exe` binary.
-
----
-
-## 🚀 Quick Start (After Database Creation)
-
-```bash
-# 1. Navigate to dashboard
-cd /var/www/sentraguard/dashboard
-
-# 2. Run migrations and seeders
-php artisan migrate --seed
-
-# 3. Start development server (for testing)
-php artisan serve --port=8001
-
-# 4. Access dashboard
-# URL: http://localhost:8001
-# Login: admin@sentraguard.local / password
-```
-
----
-
-## 📞 Contact & Support
-
-**Project Owner:** Syahrul Ramadhan (syahrulrmdhn.0911@gmail.com)  
-**Repository:** https://github.com/syahrullrmdhn/sentraguard  
+**Repository:** https://github.com/syahrullrmdhn/sentraguard
+**Owner:** Syahrul Ramadhan (syahrulrmdhn.0911@gmail.com)
 **License:** MIT
-
----
-
-**Report Generated:** 2026-06-20 18:51 WIB  
-**Next Milestone:** Create MySQL database → Run migrations → Build Agent APIs
