@@ -1,0 +1,54 @@
+# Laravel
+dashboard/.env
+dashboard/.env.backup
+dashboard/.env.production
+dashboard/.phpunit.result.cache
+dashboard/Homestead.json
+dashboard/Homestead.yaml
+dashboard/auth.json
+dashboard/npm-debug.log
+dashboard/yarn-error.log
+dashboard/.DS_Store
+dashboard/Thumbs.db
+dashboard/node_modules/
+dashboard/public/hot
+dashboard/public/storage
+dashboard/storage/*.key
+dashboard/storage/logs/*.log
+dashboard/vendor/
+
+# Go Agent
+agent/sentraguard-agent.exe
+agent/sentraguard-agent
+agent/build/
+agent/dist/
+agent/*.log
+agent/*.exe
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.buildpath
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Installer
+installer/output/
+installer/*.exe
+
+# Documentation
+docs/.build/
+
+# Misc
+*.bak
+*.tmp
+*.temp
+.cache/
