@@ -1,7 +1,12 @@
 # Laravel
 dashboard/.env
+dashboard/.env.*
+!dashboard/.env.example
 dashboard/.env.backup
 dashboard/.env.production
+# SQLite verification/throwaway DBs
+dashboard/database/*.sqlite
+dashboard/database/verify.sqlite
 dashboard/.phpunit.result.cache
 dashboard/Homestead.json
 dashboard/Homestead.yaml
