@@ -20,7 +20,7 @@
         'failed' => 'bg-danger text-white',
         'timeout' => 'bg-danger text-white',
         'rejected' => 'bg-danger text-white',
-        'cancelled' => 'bg-paper text-ink-soft',
+        'cancelled' => 'bg-neutral text-white',
     ];
 @endphp
 

@@ -7,8 +7,8 @@
         </div>
         @php $st = $server->agent->status ?? 'inactive'; @endphp
         <span class="inline-flex w-fit items-center gap-1.5 border-2 border-ink px-3 py-1 text-xs font-bold uppercase
-            {{ $st === 'online' ? 'bg-ok text-white' : ($st === 'revoked' ? 'bg-danger text-white' : 'bg-paper text-ink-soft') }}">
-            <span class="h-1.5 w-1.5 rounded-full {{ $st === 'online' ? 'bg-white' : 'bg-ink-soft' }}"></span>
+            {{ $st === 'online' ? 'bg-ok text-white' : ($st === 'revoked' ? 'bg-danger text-white' : 'bg-neutral text-white') }}">
+            <span class="h-1.5 w-1.5 rounded-full bg-white"></span>
             {{ $st }}
         </span>
     </div>
@@ -112,7 +112,7 @@
                                     </td>
                                     <td class="px-6 py-3">
                                         <span class="inline-flex border-2 border-ink px-2.5 py-0.5 text-xs font-bold uppercase
-                                            {{ $svc->status === 'Running' ? 'bg-ok text-white' : 'bg-paper text-ink-soft' }}">
+                                            {{ $svc->status === 'Running' ? 'bg-ok text-white' : 'bg-neutral text-white' }}">
                                             {{ $svc->status }}
                                         </span>
                                     </td>

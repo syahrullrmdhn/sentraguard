@@ -38,7 +38,7 @@
                             <td class="px-6 py-3 text-ink-soft">{{ $log->server->name ?? '—' }}</td>
                             <td class="px-6 py-3">
                                 <span class="inline-flex border-2 border-ink px-2.5 py-0.5 text-xs font-bold uppercase
-                                    {{ $log->result === 'success' ? 'bg-ok text-white' : ($log->result === 'failed' ? 'bg-danger text-white' : 'bg-paper text-ink-soft') }}">
+                                    {{ $log->result === 'success' ? 'bg-ok text-white' : ($log->result === 'failed' ? 'bg-danger text-white' : 'bg-neutral text-white') }}">
                                     {{ $log->result ?? '—' }}
                                 </span>
                             </td>
