@@ -1,64 +1,63 @@
 # SentraGuard AgentOps
 
-> Centralized Windows Service Control Platform powered by Laravel 13, PHP 8.4, MySQL, and a Windows Agent `.exe`.
+> Centralized Windows Service Control & Monitoring Platform powered by Laravel 13, PHP 8.4, MySQL, and a lightweight Windows Agent `.exe` built in Go.
 
-![Laravel](https://img.shields.io/badge/Laravel-13.x-red?style=flat-square&logo=laravel)
-![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=flat-square&logo=php)
-![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?style=flat-square&logo=mysql&logoColor=white)
-![Agent](https://img.shields.io/badge/Windows%20Agent-.exe-0078D4?style=flat-square&logo=windows)
-![Architecture](https://img.shields.io/badge/Architecture-Pull%20Agent-2E7D32?style=flat-square)
-![Status](https://img.shields.io/badge/Status-Project%20Brief-blue?style=flat-square)
+[![Laravel](https://img.shields.io/badge/Laravel-13.x-red?style=flat-square&logo=laravel)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=flat-square&logo=php)](https://php.net)
+[![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go)](https://go.dev)
+[![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://mysql.com)
+[![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io)
+[![Architecture](https://img.shields.io/badge/Architecture-Pull%20Agent-2E7D32?style=flat-square)](https://github.com/syahrullrmdhn/sentraguard)
+[![Status](https://img.shields.io/badge/Status-In%20Development-blue?style=flat-square)](https://github.com/syahrullrmdhn/sentraguard)
+[![License](https://img.shields.io/badge/License-MIT-gray?style=flat-square)](LICENSE)
 
 ---
 
 ## Table of Contents
 
-- [1. Project Overview](#1-project-overview)
-- [2. Product Identity](#2-product-identity)
-- [3. Background](#3-background)
-- [4. Objectives](#4-objectives)
-- [5. Architecture Overview](#5-architecture-overview)
-- [6. Why Pull-Based Agent](#6-why-pull-based-agent)
-- [7. Core Modules](#7-core-modules)
-- [8. Feature Scope](#8-feature-scope)
-- [9. Technology Stack](#9-technology-stack)
-- [10. UML Use Case](#10-uml-use-case)
-- [11. System Flow](#11-system-flow)
-- [12. Database Design](#12-database-design)
-- [13. MySQL Schema Draft](#13-mysql-schema-draft)
-- [14. API Contract](#14-api-contract)
-- [15. Windows Agent Specification](#15-windows-agent-specification)
-- [16. Security Design](#16-security-design)
-- [17. RBAC Matrix](#17-rbac-matrix)
-- [18. UI Structure](#18-ui-structure)
-- [19. Repository Structure](#19-repository-structure)
-- [20. Environment Configuration](#20-environment-configuration)
-- [21. Deployment Design](#21-deployment-design)
-- [22. Development Roadmap](#22-development-roadmap)
-- [23. MVP Acceptance Criteria](#23-mvp-acceptance-criteria)
-- [24. Risk Register](#24-risk-register)
-- [25. References](#25-references)
+1. [Project Overview](#1-project-overview)
+2. [Product Identity](#2-product-identity)
+3. [Background & Problem Statement](#3-background--problem-statement)
+4. [Objectives](#4-objectives)
+5. [Architecture Overview](#5-architecture-overview)
+6. [Why Pull-Based Agent](#6-why-pull-based-agent)
+7. [Core Modules](#7-core-modules)
+8. [Feature Scope](#8-feature-scope)
+9. [Technology Stack](#9-technology-stack)
+10. [UML Use Case](#10-uml-use-case)
+11. [System Flow](#11-system-flow)
+12. [Database Design](#12-database-design)
+13. [MySQL Schema](#13-mysql-schema)
+14. [API Contract](#14-api-contract)
+15. [Windows Agent Specification](#15-windows-agent-specification)
+16. [Security Design](#16-security-design)
+17. [RBAC Matrix](#17-rbac-matrix)
+18. [UI Structure](#18-ui-structure)
+19. [Repository Structure](#19-repository-structure)
+20. [Environment Configuration](#20-environment-configuration)
+21. [Installation Guide](#21-installation-guide)
+22. [Deployment Design](#22-deployment-design)
+23. [Development Roadmap](#23-development-roadmap)
+24. [MVP Acceptance Criteria](#24-mvp-acceptance-criteria)
+25. [Risk Register](#25-risk-register)
+26. [Contributing](#26-contributing)
+27. [References](#27-references)
 
 ---
 
 ## 1. Project Overview
 
-**SentraGuard AgentOps** is a centralized web platform for managing Windows Services across multiple Windows Server machines using a lightweight Windows Agent.
+**SentraGuard AgentOps** is a centralized web platform for managing and monitoring Windows Services across multiple Windows Server machines using a lightweight Windows Agent.
 
-The platform allows authorized users to control selected Windows Services from a central dashboard without directly opening RDP or exposing custom inbound API ports on each Windows Server.
+The platform allows authorized users to:
 
-Supported service actions:
+- **Control** Windows Services (start, stop, restart, enable, disable) from a single dashboard
+- **Monitor** server health metrics in near-realtime (CPU, RAM, Disk usage)
+- **Detect** service state changes proactively without waiting for a manual sync
+- **Audit** every administrative action with a full, immutable trail
+- **Delegate** service operations safely using role-based access control
 
-- Start service
-- Stop service
-- Restart service
-- Enable service startup
-- Disable service startup
-- Sync service status
-- Track command history
-- Audit every administrative action
-
-The Windows Agent is distributed as an `.exe` and installed as a **Windows Service**. After installation, the agent connects outbound to the central dashboard over HTTPS, polls for pending commands, executes approved service operations locally, and reports the result back to the dashboard.
+The Windows Agent is distributed as a single `.exe` binary and installed as a **Windows Service**. It initiates outbound HTTPS communication to the central dashboard, polls for pending commands, executes approved service operations locally, and reports the result back. No inbound port on the Windows Server is required.
 
 ---
 
@@ -72,34 +71,34 @@ The Windows Agent is distributed as an `.exe` and installed as a **Windows Servi
 | Agent Binary | `sentraguard-agent.exe` |
 | Installer Name | `SentraGuardAgentSetup.exe` |
 | Windows Service Name | `SentraGuard Agent Service` |
-| Architecture Pattern | Pull-Based Agent Architecture |
+| Architecture Pattern | Pull-Based Agent |
 | Primary Backend | Laravel 13 |
 | Runtime | PHP 8.4 |
-| Database | MySQL |
-| Agent Runtime | Go single-binary `.exe` |
+| Database | MySQL 8.x |
+| Agent Runtime | Go 1.22+ (single binary `.exe`) |
 
 ---
 
-## 3. Background
+## 3. Background & Problem Statement
 
-Managing Windows Services manually is operationally inefficient when an organization has multiple Windows Servers. Common manual approaches include:
+Managing Windows Services manually is operationally inefficient when an organization runs multiple Windows Servers. Common manual approaches include:
 
-- Remote Desktop Protocol access
-- `services.msc`
-- Manual PowerShell execution
-- Direct login to each server
-- Manual tracking of who changed what and when
+- Direct RDP access and using `services.msc`
+- Manual PowerShell execution on each server
+- Direct login to each server for routine restarts
 
-This introduces several operational problems:
+This creates several operational problems:
 
-- Too much dependency on RDP access
-- No centralized audit trail
-- No centralized service status visibility
-- Hard to safely delegate service control to operators
-- Higher risk of accidental service disruption
-- Slow incident response when services need to be restarted quickly
+| Problem | Impact |
+|---|---|
+| Too much RDP dependency | Slow response time; requires VPN or bastion |
+| No centralized audit trail | Cannot track who changed what and when |
+| No centralized status visibility | Operators must check each server individually |
+| Hard to delegate safely | Risk of excessive privilege grants |
+| No proactive service failure detection | Services can silently die without anyone noticing |
+| No resource usage visibility | Cannot correlate service restarts with CPU/RAM spikes |
 
-SentraGuard AgentOps is designed to solve these problems by introducing a controlled, auditable, and centralized Windows Service operation platform.
+**SentraGuard AgentOps** solves these problems by introducing a controlled, auditable, and centralized Windows Service operations platform with built-in resource monitoring.
 
 ---
 
@@ -107,92 +106,107 @@ SentraGuard AgentOps is designed to solve these problems by introducing a contro
 
 ### 4.1 Primary Objective
 
-Build a centralized web dashboard that can safely manage selected Windows Services on multiple Windows Servers using a secure outbound Windows Agent.
+Build a centralized web dashboard that can safely manage and monitor Windows Services on multiple Windows Servers using a secure outbound Windows Agent.
 
 ### 4.2 Operational Objectives
 
-- Reduce direct RDP usage for routine service operations.
-- Provide centralized visibility of Windows Service status.
-- Provide audit logs for every service action.
-- Allow safe role-based delegation to operators.
-- Prevent arbitrary PowerShell execution from the dashboard.
-- Support multiple Windows Servers from a single dashboard.
-- Keep the Windows side simple: install `.exe`, configure token, run service.
+- Reduce direct RDP usage for routine service operations
+- Provide centralized, near-realtime visibility of Windows Service status
+- Provide near-realtime CPU, RAM, and Disk usage per server
+- Proactively detect service state changes (no manual sync required)
+- Provide full audit logs for every service and administrative action
+- Allow safe role-based delegation to operators
+- Prevent arbitrary PowerShell execution from the dashboard
+- Support multiple Windows Servers from a single dashboard
 
 ### 4.3 Security Objectives
 
-- Do not expose custom inbound agent ports on Windows Servers.
-- Use HTTPS for all dashboard-agent communication.
-- Use hashed token storage on the backend.
-- Restrict actions using service whitelist and RBAC.
-- Make every administrative action traceable.
+- Do not expose custom inbound agent ports on Windows Servers
+- Use HTTPS for all dashboard–agent communication
+- Use hashed token storage in the backend database
+- Store runtime tokens securely using Windows DPAPI on the agent side
+- Restrict actions using a service allowlist and RBAC
+- Make every administrative action traceable and immutable
 
 ---
 
 ## 5. Architecture Overview
 
-SentraGuard AgentOps uses a **pull-based agent model**.
+SentraGuard AgentOps uses a **pull-based agent model**. The agent on each Windows Server initiates all communication outbound to the dashboard. The dashboard never connects directly to a Windows Server.
 
-The agent installed on Windows Server initiates communication to the central dashboard. The dashboard does not directly connect to the Windows Server.
-
-```mermaid
-flowchart TD
-    A[Admin / Operator] --> B[SentraGuard Console]
-    B --> C[Laravel 13 Backend API]
-    C --> D[(MySQL Database)]
-    C --> E[Command Queue]
-    E --> D
-
-    F[Windows Server] --> G[SentraGuard Agent .exe]
-    G -->|Outbound HTTPS Polling| C
-    G --> H[Command Validator]
-    H --> I[PowerShell Executor]
-    I --> J[Windows Service Control Manager]
-
-    J --> I
-    I --> G
-    G -->|Submit Result| C
-    C --> D
+```
+┌─────────────────────────────────────────────────────────┐
+│                   SentraGuard Console                    │
+│                                                          │
+│   Admin / Operator ──► Laravel 13 API ──► MySQL DB      │
+│                                │                         │
+│                         Command Queue                    │
+│                         Metrics Store                    │
+│                         Audit Logs                       │
+└────────────────────────────┬────────────────────────────┘
+                             │ HTTPS (inbound from agent)
+                             │
+              ┌──────────────▼──────────────┐
+              │     Windows Server           │
+              │                             │
+              │  SentraGuard Agent (.exe)   │
+              │  ├─ Heartbeat loop          │
+              │  ├─ Metrics collector       │
+              │  ├─ Command poller          │
+              │  ├─ Service monitor loop    │
+              │  └─ PowerShell executor     │
+              │         │                   │
+              │  Windows Service Control    │
+              │  Manager (SCM)              │
+              └─────────────────────────────┘
 ```
 
 ### Main Data Flow
 
-1. Admin creates a command from the dashboard.
-2. Backend validates user permission.
-3. Backend stores command as `pending` in MySQL.
-4. Windows Agent polls the backend over HTTPS.
-5. Agent receives pending command.
-6. Agent validates command and service whitelist.
-7. Agent executes a safe predefined PowerShell action.
-8. Agent reports result back to the backend.
-9. Dashboard displays command status and audit trail.
+1. Admin issues a command or views metrics on the dashboard.
+2. Backend validates user permission via RBAC.
+3. Backend stores the command as `pending` in MySQL.
+4. Windows Agent polls the backend over HTTPS every N seconds.
+5. Agent receives pending command and validates it against the service allowlist.
+6. Agent executes a predefined, safe PowerShell action.
+7. Agent reports the result (stdout, stderr, exit code) back to the backend.
+8. Dashboard updates command status and writes to the audit log.
+
+### Metrics Flow (independent of command flow)
+
+1. Agent collects CPU, RAM, and Disk metrics every 15 seconds using `gopsutil`.
+2. Agent `POST`s metrics to `/api/agent/metrics`.
+3. Backend stores them in `server_metrics`.
+4. Dashboard Livewire component polls the backend every 10 seconds to render charts.
+
+### Proactive Service Monitoring Flow (independent of command flow)
+
+1. Agent monitors whitelisted services every 30 seconds.
+2. If a service state changes (e.g., Running → Stopped), agent immediately posts a service event to `/api/agent/service-events`.
+3. Backend updates `server_services`, writes an audit log entry, and can trigger a notification.
 
 ---
 
 ## 6. Why Pull-Based Agent
 
-The project intentionally uses a pull-based agent model instead of exposing a public API on every Windows Server.
-
 | Aspect | Pull-Based Agent | Direct Public IP Agent |
 |---|---|---|
 | Inbound port on Windows | Not required | Required |
 | Public internet exposure | Lower | Higher |
-| Works behind NAT/private network | Yes | Difficult |
+| Works behind NAT / private network | Yes | Difficult |
 | AWS Security Group complexity | Lower | Higher |
 | Risk of internet scanning | Lower | Higher |
 | Operational safety | Better | Requires strict hardening |
-| Recommended for production | Yes | Only with strong controls |
+| Recommended for production | ✅ Yes | ⚠️ Only with strong controls |
 
-### Recommended Communication Model
-
-```text
-Windows Agent -> HTTPS -> SentraGuard Backend
+**Recommended:**
+```
+Windows Agent ──outbound HTTPS──► SentraGuard Backend
 ```
 
-Not recommended:
-
-```text
-SentraGuard Dashboard -> Public IP:Agent Port -> Windows Server
+**Not recommended:**
+```
+SentraGuard Dashboard ──► Public IP:Port ──► Windows Server
 ```
 
 ---
@@ -201,88 +215,74 @@ SentraGuard Dashboard -> Public IP:Agent Port -> Windows Server
 
 ### 7.1 Dashboard Module
 
-Responsible for presenting operational information to human users.
+Central hub presenting operational information to human users.
 
-Key functions:
-
-- View total servers
-- View online/offline agents
-- View pending/running/failed commands
-- View recent service activity
-- View failed service operations
-- View audit logs
+- Total servers, online/offline agent count
+- Pending / running / failed command count
+- Recent service activity and failed operations
+- Per-server CPU, RAM, Disk usage charts
+- Audit log viewer with filtering and search
 
 ### 7.2 Server Management Module
 
-Responsible for managed Windows Server inventory.
+Manages the inventory of monitored Windows Servers.
 
-Key functions:
-
-- Create server record
-- Generate agent registration token
-- View server detail
-- View hostname, OS version, IP address, environment
-- View agent status
-- Revoke agent
-- Delete/decommission server
+- Create and update server records
+- Generate and revoke agent registration tokens
+- View server detail (hostname, OS, IP, environment, agent version)
+- View agent online/offline status and last heartbeat
 
 ### 7.3 Agent Management Module
 
-Responsible for agent identity and lifecycle.
+Handles agent identity and lifecycle.
 
-Key functions:
-
-- Agent registration
-- Heartbeat processing
-- Runtime token management
+- Agent self-registration
+- Periodic heartbeat processing and online/offline detection
+- Runtime token lifecycle and revocation
 - Agent version tracking
-- Agent status monitoring
-- Token revocation
-- Offline detection
+- Offline threshold alerting
 
-### 7.4 Windows Service Module
+### 7.4 Metrics Module *(added to MVP scope)*
 
-Responsible for service inventory and operation.
+Collects and displays server resource usage.
 
-Key functions:
+- Near-realtime CPU percentage per server
+- RAM used / total per server
+- Disk used / total per server
+- Historical metrics chart (last 1h / 24h / 7d)
+- Data retention and automatic pruning
 
-- Sync Windows Service list from agent
-- View service status
-- View startup type
-- Mark service as allowed/not allowed
-- Start service
-- Stop service
-- Restart service
-- Enable service startup
-- Disable service startup
+### 7.5 Windows Service Module
 
-### 7.5 Command Queue Module
+Manages service inventory and operations.
 
-Responsible for controlled command execution.
+- Sync Windows Service list from agent (on-demand and proactive)
+- View service status and startup type
+- Mark service as allowed / not allowed (allowlist management)
+- Execute: Start, Stop, Restart, Enable startup, Disable startup
+- Receive proactive service state change events from agent
 
-Key functions:
+### 7.6 Command Queue Module
 
-- Create pending command
-- Assign command to agent
-- Track picked/running/success/failed status
-- Store stdout/stderr result
-- Handle timeout
-- Retry failed command
-- Cancel pending command
+Controls safe command execution.
 
-### 7.6 Audit Log Module
+- Create and queue pending commands
+- Atomic command assignment to agent (prevents duplicate pickup)
+- Track command lifecycle: pending → picked → running → success / failed / timeout / rejected / cancelled
+- Store stdout / stderr / exit code from agent
+- Handle command timeout and retry
+- Cancel pending commands before pickup
 
-Responsible for traceability.
+### 7.7 Audit Log Module
 
-Key functions:
+Provides full operational traceability.
 
-- Log user login/logout
-- Log server creation
-- Log agent token generation
-- Log agent revocation
-- Log service command requests
-- Log command results
-- Log whitelist changes
+- Log user login / logout
+- Log every server, agent, and allowlist change
+- Log every service command request and result
+- Log proactive service state changes
+- Immutable records — no UPDATE or DELETE on audit_logs
+- Filterable by user, server, action, and date range
 
 ---
 
@@ -290,50 +290,50 @@ Key functions:
 
 ### 8.1 MVP Scope
 
-The first production-ready MVP should include:
-
-- User login
-- Role-based access control
-- Server inventory
-- Agent token generation
-- Agent registration
-- Agent heartbeat
-- Online/offline status
-- Service synchronization
-- Service whitelist
-- Start service
-- Stop service
-- Restart service
-- Enable service startup
-- Disable service startup
-- Command history
-- Audit logs
+| Feature | Status |
+|---|---|
+| User login + session management | MVP |
+| Role-based access control (RBAC) | MVP |
+| Server inventory (CRUD) | MVP |
+| Agent token generation | MVP |
+| Agent registration | MVP |
+| Agent heartbeat + online/offline detection | MVP |
+| Service synchronization (on-demand) | MVP |
+| Proactive service state change detection | MVP *(added)* |
+| Service allowlist management | MVP |
+| Start / Stop / Restart service | MVP |
+| Enable / Disable service startup | MVP |
+| Command history and status tracking | MVP |
+| Atomic command pickup (race-condition safe) | MVP *(added)* |
+| CPU / RAM / Disk metrics collection | MVP *(added)* |
+| Near-realtime metrics display | MVP *(added)* |
+| Audit logs | MVP |
+| Metrics data retention / auto-pruning | MVP *(added)* |
 
 ### 8.2 Future Scope
 
-Possible future enhancements:
-
-- Two-factor authentication
-- Approval workflow for dangerous actions
-- Telegram or WhatsApp notification
-- Scheduled service restart
-- Agent auto-update
-- CPU/RAM/Disk monitoring
+- Two-factor authentication (2FA)
+- Approval workflow for stop/disable actions
+- Telegram / WhatsApp / Email notification on service failure
+- Scheduled service restart (cron-style)
+- Agent auto-update mechanism
 - Service dependency warning
 - Multi-tenant organization support
-- Realtime dashboard using WebSocket
-- Signed agent binary
-- MSI installer distribution
+- Realtime dashboard using WebSocket or SSE
+- Signed and notarized agent binary
+- MSI installer with GPO deployment support
+- Long-polling command delivery (sub-second latency)
 
 ### 8.3 Explicit Non-Goals
 
-For security reasons, the system should **not** provide:
+For security reasons, the system will **never** provide:
 
-- Arbitrary PowerShell execution from dashboard
-- Remote shell terminal
-- File manager access
+- Arbitrary PowerShell or CMD execution from the dashboard
+- Remote shell or terminal access
+- File manager or file transfer
 - Full remote desktop replacement
 - Unrestricted Windows administration
+- Raw script upload or execution
 
 ---
 
@@ -344,93 +344,53 @@ For security reasons, the system should **not** provide:
 | Layer | Technology | Notes |
 |---|---|---|
 | Backend Framework | Laravel 13 | Main application framework |
-| PHP Runtime | PHP 8.4 | Standard runtime for this project |
-| Frontend | Blade + Livewire + Tailwind CSS | Practical admin dashboard stack |
+| PHP Runtime | PHP 8.4 | Standard runtime |
+| Frontend | Blade + Livewire 3 + Tailwind CSS | Admin dashboard stack |
+| Realtime UI | Livewire polling (`wire:poll`) | Near-realtime metrics, no WebSocket needed for MVP |
 | Database | MySQL 8.x | Primary relational database |
-| Cache | Redis | Optional, recommended for production |
-| Queue | Redis Queue / Database Queue | Redis recommended for higher reliability |
-| Web Server | Nginx | Reverse proxy and PHP-FPM gateway |
+| Cache | Redis 7.x | Session, cache, queue backend |
+| Queue | Redis Queue | Async jobs and background processing |
+| Web Server | Nginx 1.26+ | Reverse proxy and PHP-FPM gateway |
 | Process Manager | Supervisor | Queue worker management |
-| Agent Language | Go | Single binary `.exe` for Windows Agent |
-| Agent Config | YAML | Simple local configuration |
-| Agent Installer | Inno Setup or WiX Toolset | Windows installer packaging |
-| Transport | HTTPS REST API | Agent-dashboard communication |
+| Agent Language | Go 1.22+ | Single binary `.exe` for Windows |
+| Agent Metrics | `gopsutil` v3 | CPU, RAM, Disk collection |
+| Agent Config | YAML + Windows DPAPI | Config file + secure token storage |
+| Agent Installer | Inno Setup or WiX Toolset | Windows installer packaging; supports silent install |
+| Transport | HTTPS REST API | All agent–dashboard communication |
 | Containerization | Docker Compose | Dashboard deployment |
 
-### 9.2 Version Standard
+### 9.2 Version Standards
 
 | Component | Target Version |
 |---|---|
 | Laravel | `13.x` |
 | PHP | `8.4` |
+| Go | `1.22+` |
 | MySQL | `8.x` |
 | Redis | `7.x` |
-| Node.js | `22.x LTS` or newer LTS |
-| Go | `1.22+` |
+| Node.js | `22.x LTS` |
 | Nginx | `1.26+` |
+| gopsutil | `v3` |
 
 ---
 
 ## 10. UML Use Case
 
-```mermaid
-flowchart LR
-    SuperAdmin[Super Admin]
-    Admin[Admin]
-    Operator[Operator]
-    Viewer[Viewer]
-    Agent[Windows Agent]
+```
+Actors:
+  Super Admin  ─── Full system control
+  Admin        ─── Server and service management
+  Operator     ─── Service operations only
+  Viewer       ─── Read-only access
+  Agent        ─── Automated system actor
 
-    UC1[Manage Users]
-    UC2[Manage Roles]
-    UC3[Manage Servers]
-    UC4[Generate Agent Token]
-    UC5[Revoke Agent]
-    UC6[View Services]
-    UC7[Start Service]
-    UC8[Stop Service]
-    UC9[Restart Service]
-    UC10[Enable Service]
-    UC11[Disable Service]
-    UC12[View Audit Logs]
-    UC13[Register]
-    UC14[Heartbeat]
-    UC15[Poll Command]
-    UC16[Execute Command]
-    UC17[Submit Result]
-    UC18[Sync Services]
-
-    SuperAdmin --> UC1
-    SuperAdmin --> UC2
-    SuperAdmin --> UC3
-    SuperAdmin --> UC4
-    SuperAdmin --> UC5
-    SuperAdmin --> UC12
-
-    Admin --> UC3
-    Admin --> UC4
-    Admin --> UC5
-    Admin --> UC6
-    Admin --> UC7
-    Admin --> UC8
-    Admin --> UC9
-    Admin --> UC10
-    Admin --> UC11
-    Admin --> UC12
-
-    Operator --> UC6
-    Operator --> UC7
-    Operator --> UC8
-    Operator --> UC9
-
-    Viewer --> UC6
-
-    Agent --> UC13
-    Agent --> UC14
-    Agent --> UC15
-    Agent --> UC16
-    Agent --> UC17
-    Agent --> UC18
+Super Admin:  Manage Users, Manage Roles, all Admin capabilities
+Admin:        Manage Servers, Generate/Revoke Token, Manage Allowlist,
+              Service Control (start/stop/restart/enable/disable), View Audit Logs
+Operator:     Start / Stop / Restart (whitelisted services only), Retry/Cancel Command
+Viewer:       View Services, View Metrics, View Servers
+Agent:        Register, Heartbeat, Poll Command, Submit Result,
+              Sync Services, Post Metrics, Post Service Events
 ```
 
 ---
@@ -439,406 +399,333 @@ flowchart LR
 
 ### 11.1 Agent Registration Flow
 
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant Dashboard
-    participant DB as MySQL
-    participant Agent as Windows Agent
-
-    Admin->>Dashboard: Create server + generate token
-    Dashboard->>DB: Store token hash
-    Admin->>Agent: Install agent with server URL + token
-    Agent->>Dashboard: POST /api/agent/register
-    Dashboard->>DB: Validate token hash
-    Dashboard->>DB: Create/update agent record
-    Dashboard-->>Agent: Return agent_uid + runtime_token
-    Agent->>Agent: Save config locally
-    Agent->>Dashboard: Start heartbeat
+```
+Admin                Dashboard               MySQL               Agent
+  │                      │                     │                   │
+  ├── Create server ─────►│                     │                   │
+  │                      ├── Store token hash ─►│                   │
+  │                      │                     │                   │
+  │                      │         (Admin installs agent with URL + token)
+  │                      │                     │                   │
+  │                      │◄───────── POST /api/agent/register ──────┤
+  │                      ├── Validate token ───►│                   │
+  │                      ├── Upsert agent ──────►│                   │
+  │                      ├── Return agent_uid + runtime_token ──────►│
+  │                      │                     │                   │
+  │                      │◄────────────────── Heartbeat starts ─────┤
 ```
 
 ### 11.2 Command Execution Flow
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Dashboard
-    participant DB as MySQL
-    participant Agent as Windows Agent
-    participant PS as PowerShell
-    participant SCM as Service Control Manager
-
-    User->>Dashboard: Click restart service
-    Dashboard->>Dashboard: Check RBAC permission
-    Dashboard->>DB: Create command status=pending
-    Agent->>Dashboard: Poll pending command
-    Dashboard->>DB: Mark command=picked
-    Dashboard-->>Agent: Return command payload
-    Agent->>Agent: Validate action + service whitelist
-    Agent->>PS: Execute predefined command
-    PS->>SCM: Restart-Service
-    SCM-->>PS: Return status
-    PS-->>Agent: stdout/stderr/exit code
-    Agent->>Dashboard: Submit command result
-    Dashboard->>DB: Mark command success/failed
-    Dashboard->>DB: Write audit log
+```
+User             Dashboard               MySQL               Agent                 SCM
+  │                 │                      │                   │                    │
+  ├── Click ─────►  │                      │                   │                    │
+  │                 ├── Check RBAC ──────► │                   │                    │
+  │                 ├── Create pending ──► │                   │                    │
+  │                 │                      │                   │                    │
+  │                 │          ◄─── Poll (every N seconds) ────┤                    │
+  │                 ├── lockForUpdate() ──►│                   │                    │
+  │                 ├── Mark picked ──────►│                   │                    │
+  │                 ├── Return command ──────────────────────► │                    │
+  │                 │                      │                   ├── Validate ──────► │
+  │                 │                      │                   ├── Exec PS ────────►│
+  │                 │                      │                   │◄──── Result ───────┤
+  │                 │◄────────── Submit result ────────────────┤                    │
+  │                 ├── Mark success/failed►│                   │                    │
+  │                 ├── Write audit log ──►│                   │                    │
 ```
 
-### 11.3 Agent Status Flow
+### 11.3 Metrics Collection Flow
 
-```mermaid
-stateDiagram-v2
-    [*] --> inactive
-    inactive --> online: register success
-    online --> offline: heartbeat timeout
-    offline --> online: heartbeat received
-    online --> revoked: token revoked
-    offline --> revoked: token revoked
-    online --> error: internal failure
-    error --> online: recovered
-    revoked --> [*]
+```
+Agent                              Dashboard               MySQL
+  │                                    │                     │
+  ├── Collect CPU/RAM/Disk (gopsutil)   │                     │
+  ├── POST /api/agent/metrics ─────────►│                     │
+  │                                    ├── INSERT server_metrics ►│
+  │                                    │                     │
+  │          (Livewire polling every 10s)                     │
+  │                                    │◄── SELECT latest ───┤
+  │                                    ├── Render chart ──────►│ (UI)
 ```
 
-### 11.4 Command Status Flow
+### 11.4 Proactive Service Monitoring Flow
 
-```mermaid
-stateDiagram-v2
-    [*] --> pending
-    pending --> picked: agent polls command
-    picked --> running: agent starts execution
-    running --> success: exit_code = 0
-    running --> failed: exit_code != 0
-    running --> timeout: exceeded timeout
-    pending --> cancelled: user cancels before picked
-    picked --> rejected: invalid service/action
-    failed --> pending: retry
+```
+Agent                              Dashboard               MySQL
+  │                                    │                     │
+  ├── Monitor whitelisted services      │                     │
+  │   (every 30 seconds)               │                     │
+  │                                    │                     │
+  ├── Detect: Running → Stopped         │                     │
+  ├── POST /api/agent/service-events ──►│                     │
+  │                                    ├── UPDATE server_services►│
+  │                                    ├── INSERT audit_log ─►│
+  │                                    ├── Trigger notification│
+```
+
+### 11.5 Agent Status State Machine
+
+```
+                    ┌──────────┐
+         ┌──────────│ inactive │◄──────────────┐
+         │          └──────────┘               │
+         │ register                            │ uninstall
+         ▼                                     │
+    ┌────────┐  heartbeat timeout  ┌─────────┐ │
+    │ online │────────────────────►│ offline │─┤
+    │        │◄────────────────────│         │ │
+    └────────┘  heartbeat received └─────────┘ │
+         │                              │       │
+         │ token revoked                │       │
+         ▼                              │       │
+    ┌─────────┐◄─────────────────────────┘      │
+    │ revoked │─────────────────────────────────┘
+    └─────────┘
+```
+
+### 11.6 Command Status State Machine
+
+```
+             ┌─────────┐
+             │ pending │◄────── retry
+             └────┬────┘
+      user cancel │ agent polls (lockForUpdate)
+                  ▼
+          ┌────────────┐ invalid service
+          │   picked   │──────────────────► rejected
+          └─────┬──────┘
+                │ execution starts
+                ▼
+          ┌─────────┐
+          │ running │
+          └────┬────┘
+               │
+    ┌──────────┼─────────────┐
+    ▼          ▼             ▼
+ success     failed       timeout
+(exit=0)   (exit≠0)   (exceeded limit)
 ```
 
 ---
 
 ## 12. Database Design
 
-### 12.1 ERD
+### 12.1 Entity Relationship Overview
 
-```mermaid
-erDiagram
-    users ||--o{ service_commands : requests
-    users ||--o{ audit_logs : creates
-    users }o--o{ roles : has
-    roles }o--o{ permissions : owns
+```
+users ──────────────── service_commands (requested_by)
+users ──────────────── audit_logs (actor)
+users ──── role_user ── roles ── permission_role ── permissions
 
-    servers ||--o{ agents : has
-    servers ||--o{ server_services : contains
-    servers ||--o{ service_commands : receives
-    servers ||--o{ audit_logs : recorded_in
-
-    agents }o--|| servers : belongs_to
-    server_services }o--|| servers : belongs_to
-    service_commands }o--|| servers : belongs_to
-    service_commands }o--|| users : requested_by
-    audit_logs }o--|| users : actor
-    audit_logs }o--|| servers : target
-
-    users {
-        bigint id PK
-        varchar name
-        varchar email UK
-        varchar password
-        varchar status
-        timestamp last_login_at
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    roles {
-        bigint id PK
-        varchar name UK
-        text description
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    permissions {
-        bigint id PK
-        varchar permission_key UK
-        varchar name
-        text description
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    servers {
-        bigint id PK
-        varchar name
-        varchar hostname
-        varchar machine_id UK
-        varchar os_name
-        varchar os_version
-        varchar environment
-        varchar public_ip
-        varchar private_ip
-        varchar status
-        timestamp last_seen_at
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    agents {
-        bigint id PK
-        bigint server_id FK
-        varchar agent_uid UK
-        text token_hash
-        varchar version
-        varchar status
-        timestamp last_heartbeat_at
-        timestamp installed_at
-        timestamp revoked_at
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    server_services {
-        bigint id PK
-        bigint server_id FK
-        varchar service_name
-        varchar display_name
-        varchar status
-        varchar startup_type
-        boolean is_allowed
-        timestamp last_checked_at
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    service_commands {
-        bigint id PK
-        bigint server_id FK
-        varchar service_name
-        varchar action
-        varchar status
-        bigint requested_by FK
-        timestamp picked_at
-        timestamp executed_at
-        timestamp finished_at
-        int timeout_seconds
-        int exit_code
-        longtext stdout
-        longtext stderr
-        longtext error_message
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    audit_logs {
-        bigint id PK
-        bigint user_id FK
-        bigint server_id FK
-        varchar action
-        varchar target_type
-        varchar target_id
-        varchar ip_address
-        text user_agent
-        text description
-        json metadata
-        timestamp created_at
-    }
+servers ─────────────── agents
+servers ─────────────── server_services
+servers ─────────────── server_metrics       ← new
+servers ─────────────── service_commands
+servers ─────────────── audit_logs
 ```
 
 ### 12.2 Entity Summary
 
-| Entity | Purpose |
+| Table | Purpose |
 |---|---|
-| `users` | Dashboard users/operators |
+| `users` | Dashboard users |
 | `roles` | Role grouping |
-| `permissions` | Fine-grained access keys |
-| `role_user` | User-role pivot |
-| `permission_role` | Role-permission pivot |
+| `permissions` | Fine-grained permission keys |
+| `role_user` | User ↔ role pivot |
+| `permission_role` | Role ↔ permission pivot |
 | `servers` | Managed Windows Server inventory |
 | `agents` | Installed agent identity and lifecycle |
 | `server_services` | Windows Services synced from agent |
+| `server_metrics` | CPU / RAM / Disk time-series data |
 | `service_commands` | Command queue and execution result |
 | `audit_logs` | Immutable operational trace |
 
 ---
 
-## 13. MySQL Schema Draft
-
-> This schema is a project brief draft. In Laravel implementation, convert this into Laravel migrations.
+## 13. MySQL Schema
 
 ```sql
+-- Users
 CREATE TABLE users (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
-    email VARCHAR(190) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    status ENUM('active', 'inactive', 'locked') NOT NULL DEFAULT 'active',
+    id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(150) NOT NULL,
+    email         VARCHAR(190) NOT NULL UNIQUE,
+    password      VARCHAR(255) NOT NULL,
+    status        ENUM('active','inactive','locked') NOT NULL DEFAULT 'active',
     last_login_at TIMESTAMP NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL
+    created_at    TIMESTAMP NULL,
+    updated_at    TIMESTAMP NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Roles
 CREATE TABLE roles (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
+    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL UNIQUE,
     description TEXT NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL
+    created_at  TIMESTAMP NULL,
+    updated_at  TIMESTAMP NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Permissions
 CREATE TABLE permissions (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id             BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     permission_key VARCHAR(150) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    description TEXT NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL
+    name           VARCHAR(150) NOT NULL,
+    description    TEXT NULL,
+    created_at     TIMESTAMP NULL,
+    updated_at     TIMESTAMP NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Role ↔ User pivot
 CREATE TABLE role_user (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT UNSIGNED NOT NULL,
-    role_id BIGINT UNSIGNED NOT NULL,
+    id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id    BIGINT UNSIGNED NOT NULL,
+    role_id    BIGINT UNSIGNED NOT NULL,
     created_at TIMESTAMP NULL,
     UNIQUE KEY role_user_unique (user_id, role_id),
     CONSTRAINT fk_role_user_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_role_user_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Role ↔ Permission pivot
 CREATE TABLE permission_role (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    role_id BIGINT UNSIGNED NOT NULL,
+    id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    role_id       BIGINT UNSIGNED NOT NULL,
     permission_id BIGINT UNSIGNED NOT NULL,
-    created_at TIMESTAMP NULL,
+    created_at    TIMESTAMP NULL,
     UNIQUE KEY permission_role_unique (role_id, permission_id),
-    CONSTRAINT fk_permission_role_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_permission_role_role       FOREIGN KEY (role_id)       REFERENCES roles(id)       ON DELETE CASCADE,
     CONSTRAINT fk_permission_role_permission FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Servers
 CREATE TABLE servers (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
-    hostname VARCHAR(150) NULL,
-    machine_id VARCHAR(255) NULL UNIQUE,
-    os_name VARCHAR(150) NULL,
-    os_version VARCHAR(100) NULL,
-    environment ENUM('development', 'staging', 'production') NOT NULL DEFAULT 'production',
-    public_ip VARCHAR(45) NULL,
-    private_ip VARCHAR(45) NULL,
-    status ENUM('online', 'offline', 'inactive', 'error') NOT NULL DEFAULT 'inactive',
+    id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name         VARCHAR(150) NOT NULL,
+    hostname     VARCHAR(150) NULL,
+    machine_id   VARCHAR(255) NULL UNIQUE,
+    os_name      VARCHAR(150) NULL,
+    os_version   VARCHAR(100) NULL,
+    environment  ENUM('development','staging','production') NOT NULL DEFAULT 'production',
+    public_ip    VARCHAR(45) NULL,
+    private_ip   VARCHAR(45) NULL,
+    status       ENUM('online','offline','inactive','error') NOT NULL DEFAULT 'inactive',
     last_seen_at TIMESTAMP NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
+    created_at   TIMESTAMP NULL,
+    updated_at   TIMESTAMP NULL,
     INDEX idx_servers_status (status),
     INDEX idx_servers_environment (environment),
     INDEX idx_servers_last_seen_at (last_seen_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Agents
 CREATE TABLE agents (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    server_id BIGINT UNSIGNED NOT NULL,
-    agent_uid VARCHAR(100) NOT NULL UNIQUE,
-    token_hash TEXT NOT NULL,
-    version VARCHAR(50) NULL,
-    status ENUM('inactive', 'online', 'offline', 'revoked', 'error') NOT NULL DEFAULT 'inactive',
-    last_heartbeat_at TIMESTAMP NULL,
-    installed_at TIMESTAMP NULL,
-    revoked_at TIMESTAMP NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
+    id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    server_id           BIGINT UNSIGNED NOT NULL,
+    agent_uid           VARCHAR(100) NOT NULL UNIQUE,
+    token_hash          TEXT NOT NULL,
+    version             VARCHAR(50) NULL,
+    status              ENUM('inactive','online','offline','revoked','error') NOT NULL DEFAULT 'inactive',
+    last_heartbeat_at   TIMESTAMP NULL,
+    installed_at        TIMESTAMP NULL,
+    revoked_at          TIMESTAMP NULL,
+    created_at          TIMESTAMP NULL,
+    updated_at          TIMESTAMP NULL,
     CONSTRAINT fk_agents_server FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
     INDEX idx_agents_status (status),
     INDEX idx_agents_last_heartbeat_at (last_heartbeat_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Windows Services (synced from agent)
 CREATE TABLE server_services (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    server_id BIGINT UNSIGNED NOT NULL,
-    service_name VARCHAR(200) NOT NULL,
-    display_name VARCHAR(255) NULL,
-    status VARCHAR(50) NULL,
-    startup_type VARCHAR(50) NULL,
-    is_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    server_id       BIGINT UNSIGNED NOT NULL,
+    service_name    VARCHAR(200) NOT NULL,
+    display_name    VARCHAR(255) NULL,
+    status          VARCHAR(50) NULL,
+    startup_type    VARCHAR(50) NULL,
+    is_allowed      BOOLEAN NOT NULL DEFAULT FALSE,
     last_checked_at TIMESTAMP NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
+    created_at      TIMESTAMP NULL,
+    updated_at      TIMESTAMP NULL,
     CONSTRAINT fk_server_services_server FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
     UNIQUE KEY server_service_unique (server_id, service_name),
     INDEX idx_server_services_status (status),
     INDEX idx_server_services_allowed (is_allowed)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Server Metrics (CPU / RAM / Disk time-series)
+CREATE TABLE server_metrics (
+    id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    server_id     BIGINT UNSIGNED NOT NULL,
+    cpu_percent   DECIMAL(5,2) NOT NULL DEFAULT 0,
+    ram_used_mb   BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    ram_total_mb  BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    disk_used_gb  DECIMAL(10,2) NOT NULL DEFAULT 0,
+    disk_total_gb DECIMAL(10,2) NOT NULL DEFAULT 0,
+    collected_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_server_metrics_server FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
+    INDEX idx_server_metrics_lookup (server_id, collected_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Service Commands (command queue)
 CREATE TABLE service_commands (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    server_id BIGINT UNSIGNED NOT NULL,
-    service_name VARCHAR(200) NOT NULL,
-    action ENUM(
-        'start_service',
-        'stop_service',
-        'restart_service',
-        'enable_service',
-        'disable_service',
-        'get_service_status',
-        'sync_services'
-    ) NOT NULL,
-    status ENUM(
-        'pending',
-        'picked',
-        'running',
-        'success',
-        'failed',
-        'timeout',
-        'rejected',
-        'cancelled'
-    ) NOT NULL DEFAULT 'pending',
-    requested_by BIGINT UNSIGNED NULL,
-    picked_at TIMESTAMP NULL,
-    executed_at TIMESTAMP NULL,
-    finished_at TIMESTAMP NULL,
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    server_id       BIGINT UNSIGNED NOT NULL,
+    service_name    VARCHAR(200) NOT NULL,
+    action          ENUM(
+                        'start_service',
+                        'stop_service',
+                        'restart_service',
+                        'enable_service',
+                        'disable_service',
+                        'get_service_status',
+                        'sync_services'
+                    ) NOT NULL,
+    status          ENUM(
+                        'pending',
+                        'picked',
+                        'running',
+                        'success',
+                        'failed',
+                        'timeout',
+                        'rejected',
+                        'cancelled'
+                    ) NOT NULL DEFAULT 'pending',
+    requested_by    BIGINT UNSIGNED NULL,
+    picked_at       TIMESTAMP NULL,
+    executed_at     TIMESTAMP NULL,
+    finished_at     TIMESTAMP NULL,
     timeout_seconds INT UNSIGNED NOT NULL DEFAULT 60,
-    exit_code INT NULL,
-    stdout LONGTEXT NULL,
-    stderr LONGTEXT NULL,
-    error_message LONGTEXT NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    CONSTRAINT fk_service_commands_server FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
-    CONSTRAINT fk_service_commands_user FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL,
+    exit_code       INT NULL,
+    stdout          LONGTEXT NULL,
+    stderr          LONGTEXT NULL,
+    error_message   LONGTEXT NULL,
+    created_at      TIMESTAMP NULL,
+    updated_at      TIMESTAMP NULL,
+    CONSTRAINT fk_service_commands_server FOREIGN KEY (server_id)    REFERENCES servers(id) ON DELETE CASCADE,
+    CONSTRAINT fk_service_commands_user   FOREIGN KEY (requested_by) REFERENCES users(id)   ON DELETE SET NULL,
     INDEX idx_service_commands_status (status),
     INDEX idx_service_commands_server_status (server_id, status),
     INDEX idx_service_commands_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
 
-```sql
+-- Audit Logs (immutable — no UPDATE or DELETE)
 CREATE TABLE audit_logs (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT UNSIGNED NULL,
-    server_id BIGINT UNSIGNED NULL,
-    action VARCHAR(100) NOT NULL,
+    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT UNSIGNED NULL,
+    server_id   BIGINT UNSIGNED NULL,
+    action      VARCHAR(100) NOT NULL,
     target_type VARCHAR(100) NULL,
-    target_id VARCHAR(100) NULL,
-    ip_address VARCHAR(45) NULL,
-    user_agent TEXT NULL,
+    target_id   VARCHAR(100) NULL,
+    ip_address  VARCHAR(45) NULL,
+    user_agent  TEXT NULL,
     description TEXT NULL,
-    metadata JSON NULL,
-    created_at TIMESTAMP NULL,
-    CONSTRAINT fk_audit_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    metadata    JSON NULL,
+    created_at  TIMESTAMP NULL,
+    CONSTRAINT fk_audit_logs_user   FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE SET NULL,
     CONSTRAINT fk_audit_logs_server FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE SET NULL,
     INDEX idx_audit_logs_action (action),
     INDEX idx_audit_logs_created_at (created_at),
@@ -851,17 +738,15 @@ CREATE TABLE audit_logs (
 
 ## 14. API Contract
 
-### 14.1 Dashboard API
+### 14.1 Dashboard API (User-authenticated)
 
-#### List Servers
+All endpoints require `Authorization: Bearer <USER_TOKEN>`.
 
-```http
-GET /api/servers
-Authorization: Bearer <USER_TOKEN>
-```
+#### GET /api/servers
 
-Response:
+List all managed servers with their agent status.
 
+**Response:**
 ```json
 {
   "data": [
@@ -873,22 +758,18 @@ Response:
       "public_ip": "13.x.x.x",
       "private_ip": "10.0.1.10",
       "status": "online",
-      "last_seen_at": "2026-06-11T14:20:00+07:00"
+      "agent_version": "1.2.0",
+      "last_seen_at": "2026-06-20T14:20:00+07:00"
     }
   ]
 }
 ```
 
-#### Create Server
+#### POST /api/servers
 
-```http
-POST /api/servers
-Authorization: Bearer <USER_TOKEN>
-Content-Type: application/json
-```
+Create a new server record and generate a registration token.
 
-Request:
-
+**Request:**
 ```json
 {
   "name": "WIN-AWS-01",
@@ -896,8 +777,7 @@ Request:
 }
 ```
 
-Response:
-
+**Response:**
 ```json
 {
   "success": true,
@@ -906,23 +786,36 @@ Response:
 }
 ```
 
-#### List Server Services
+#### GET /api/servers/{server_id}/services
 
-```http
-GET /api/servers/{server_id}/services
-Authorization: Bearer <USER_TOKEN>
+List all synced Windows Services for a server.
+
+#### GET /api/servers/{server_id}/metrics/latest
+
+Get the most recent metric snapshot for a server.
+
+**Response:**
+```json
+{
+  "server_id": 1,
+  "cpu_percent": 23.5,
+  "ram_used_mb": 4096,
+  "ram_total_mb": 16384,
+  "disk_used_gb": 120.4,
+  "disk_total_gb": 500.0,
+  "collected_at": "2026-06-20T14:20:00+07:00"
+}
 ```
 
-#### Create Service Command
+#### GET /api/servers/{server_id}/metrics/history
 
-```http
-POST /api/servers/{server_id}/services/{service_name}/commands
-Authorization: Bearer <USER_TOKEN>
-Content-Type: application/json
-```
+Get metric history for charting. Supports `?period=1h|24h|7d`.
 
-Request:
+#### POST /api/servers/{server_id}/services/{service_name}/commands
 
+Issue a command for a specific service.
+
+**Request:**
 ```json
 {
   "action": "restart_service",
@@ -930,8 +823,7 @@ Request:
 }
 ```
 
-Response:
-
+**Response:**
 ```json
 {
   "success": true,
@@ -940,71 +832,71 @@ Response:
 }
 ```
 
-### 14.2 Agent API
+#### DELETE /api/servers/{server_id}/commands/{command_id}
 
-#### Agent Register
+Cancel a pending command.
 
-```http
-POST /api/agent/register
-Content-Type: application/json
-```
+#### POST /api/servers/{server_id}/commands/{command_id}/retry
 
-Request:
+Retry a failed command.
 
+---
+
+### 14.2 Agent API (Agent-authenticated)
+
+All endpoints (except register) require `Authorization: Bearer <RUNTIME_TOKEN>`.
+
+#### POST /api/agent/register
+
+Agent registers itself using the one-time installation token.
+
+**Request:**
 ```json
 {
   "token": "AGT_xxxxxxxxxxxxxxxxxxxxxxxxx",
   "hostname": "WIN-AWS-01",
-  "machine_id": "A1B2C3D4",
+  "machine_id": "A1B2C3D4E5F6",
   "os_name": "Windows Server 2022",
   "os_version": "10.0.20348",
-  "agent_version": "1.0.0",
+  "agent_version": "1.2.0",
   "private_ip": "10.0.1.10",
   "public_ip": "13.x.x.x"
 }
 ```
 
-Response:
-
+**Response:**
 ```json
 {
   "success": true,
   "agent_uid": "agt_01HXABCDEF",
   "server_id": 1,
-  "runtime_token": "RUNTIME_TOKEN",
+  "runtime_token": "RUNTIME_TOKEN_HERE",
   "poll_interval_seconds": 5,
-  "heartbeat_interval_seconds": 30
+  "heartbeat_interval_seconds": 30,
+  "metrics_interval_seconds": 15,
+  "service_monitor_interval_seconds": 30
 }
 ```
 
-#### Agent Heartbeat
+#### POST /api/agent/heartbeat
 
-```http
-POST /api/agent/heartbeat
-Authorization: Bearer <RUNTIME_TOKEN>
-Content-Type: application/json
-```
+Periodic liveness signal from the agent.
 
-Request:
-
+**Request:**
 ```json
 {
   "agent_uid": "agt_01HXABCDEF",
   "status": "online",
-  "agent_version": "1.0.0",
-  "timestamp": "2026-06-11T14:20:00+07:00"
+  "agent_version": "1.2.0",
+  "timestamp": "2026-06-20T14:20:00+07:00"
 }
 ```
 
-#### Poll Command
+#### GET /api/agent/commands/poll
 
-```http
-GET /api/agent/commands/poll
-Authorization: Bearer <RUNTIME_TOKEN>
-```
+Agent polls for the next pending command. Uses `SELECT ... FOR UPDATE` on the backend to prevent duplicate pickup.
 
-Response when command exists:
-
+**Response (command available):**
 ```json
 {
   "has_command": true,
@@ -1017,46 +909,35 @@ Response when command exists:
 }
 ```
 
-Response when no command exists:
-
+**Response (no command):**
 ```json
 {
   "has_command": false
 }
 ```
 
-#### Submit Command Result
+#### POST /api/agent/commands/{command_id}/result
 
-```http
-POST /api/agent/commands/{command_id}/result
-Authorization: Bearer <RUNTIME_TOKEN>
-Content-Type: application/json
-```
+Agent submits the result of an executed command.
 
-Request:
-
+**Request:**
 ```json
 {
   "status": "success",
   "exit_code": 0,
-  "stdout": "Service restarted successfully",
+  "stdout": "Service 'W3SVC' restarted successfully.",
   "stderr": "",
   "service_status": "Running",
   "startup_type": "Automatic",
-  "finished_at": "2026-06-11T14:21:00+07:00"
+  "finished_at": "2026-06-20T14:21:05+07:00"
 }
 ```
 
-#### Sync Services
+#### POST /api/agent/services/sync
 
-```http
-POST /api/agent/services/sync
-Authorization: Bearer <RUNTIME_TOKEN>
-Content-Type: application/json
-```
+Agent pushes the full Windows Service list.
 
-Request:
-
+**Request:**
 ```json
 {
   "services": [
@@ -1065,14 +946,40 @@ Request:
       "display_name": "World Wide Web Publishing Service",
       "status": "Running",
       "startup_type": "Automatic"
-    },
-    {
-      "service_name": "MSSQLSERVER",
-      "display_name": "SQL Server",
-      "status": "Running",
-      "startup_type": "Automatic"
     }
   ]
+}
+```
+
+#### POST /api/agent/metrics
+
+Agent pushes a resource usage snapshot.
+
+**Request:**
+```json
+{
+  "agent_uid": "agt_01HXABCDEF",
+  "cpu_percent": 23.5,
+  "ram_used_mb": 4096,
+  "ram_total_mb": 16384,
+  "disk_used_gb": 120.4,
+  "disk_total_gb": 500.0,
+  "collected_at": "2026-06-20T14:20:00+07:00"
+}
+```
+
+#### POST /api/agent/service-events
+
+Agent reports a proactive service state change (without a command being issued).
+
+**Request:**
+```json
+{
+  "agent_uid": "agt_01HXABCDEF",
+  "service_name": "W3SVC",
+  "previous_status": "Running",
+  "current_status": "Stopped",
+  "detected_at": "2026-06-20T14:25:00+07:00"
 }
 ```
 
@@ -1082,36 +989,47 @@ Request:
 
 ### 15.1 Agent Responsibilities
 
-The Windows Agent is responsible for:
-
-- Installing itself as a Windows Service
-- Reading local configuration
-- Registering with the backend
-- Sending heartbeat periodically
-- Polling pending commands
-- Validating allowed command actions
-- Validating service whitelist
-- Executing predefined PowerShell commands
-- Reporting command result
-- Syncing Windows Service status
-- Writing local logs
+| Responsibility | Description |
+|---|---|
+| Self-registration | Register with backend using one-time token |
+| Heartbeat | Send periodic liveness signal every 30s |
+| Metrics collection | Collect CPU / RAM / Disk every 15s via `gopsutil` |
+| Command polling | Poll pending commands every 5s with safe atomic pickup |
+| Service monitoring | Monitor whitelisted services every 30s, report state changes |
+| Command execution | Execute predefined PowerShell actions only |
+| Result reporting | Submit stdout / stderr / exit code to backend |
+| Local logging | Write structured logs to `C:\ProgramData\SentraGuard Agent\logs\` |
+| Secure token storage | Store runtime token in Windows Credential Manager / DPAPI |
 
 ### 15.2 Agent CLI
 
-```powershell
+```bash
+# Install and register the agent as a Windows Service
 sentraguard-agent.exe install --server https://console.example.com --token AGT_xxx
+
+# Uninstall the agent service
 sentraguard-agent.exe uninstall
+
+# Service control
 sentraguard-agent.exe start
 sentraguard-agent.exe stop
 sentraguard-agent.exe restart
 sentraguard-agent.exe status
+
+# Diagnostics
 sentraguard-agent.exe test-connection
 sentraguard-agent.exe sync-services
+sentraguard-agent.exe version
+```
+
+**Silent install for GPO/deployment tool:**
+```bash
+SentraGuardAgentSetup.exe /SILENT /server="https://console.example.com" /token="AGT_xxx"
 ```
 
 ### 15.3 Agent Directory Layout
 
-```text
+```
 C:\Program Files\SentraGuard Agent\
     sentraguard-agent.exe
 
@@ -1119,64 +1037,128 @@ C:\ProgramData\SentraGuard Agent\
     config.yaml
     logs\
         agent.log
+        agent-YYYY-MM-DD.log   (rotated daily)
 ```
 
-### 15.4 Agent Config
+### 15.4 Agent Config (`config.yaml`)
 
 ```yaml
 server_url: "https://console.example.com"
 agent_uid: "agt_01HXABCDEF"
-runtime_token: "encrypted_or_protected_token"
+
+# runtime_token is NOT stored here in production.
+# It is stored in Windows Credential Manager via DPAPI.
+# This field is only used in development mode.
+# runtime_token: ""
+
 poll_interval_seconds: 5
 heartbeat_interval_seconds: 30
+metrics_interval_seconds: 15
+service_monitor_interval_seconds: 30
 command_timeout_seconds: 60
+
 log_level: "info"
+log_max_size_mb: 50
+log_max_backups: 7
 
 allowed_services:
   - W3SVC
   - MSSQLSERVER
   - MyAppService
+  - Tomcat9
 ```
 
-### 15.5 PowerShell Action Mapping
+### 15.5 Metrics Collection (Go / gopsutil)
 
-The dashboard must never send raw PowerShell. The agent maps safe actions to predefined commands.
+```go
+import (
+    "github.com/shirou/gopsutil/v3/cpu"
+    "github.com/shirou/gopsutil/v3/mem"
+    "github.com/shirou/gopsutil/v3/disk"
+    "time"
+)
 
-#### Start Service
+func collectMetrics() MetricsPayload {
+    cpuPct, _   := cpu.Percent(time.Second, false)
+    memStat, _  := mem.VirtualMemory()
+    diskStat, _ := disk.Usage("C:\\")
 
-```powershell
-Start-Service -Name "W3SVC"
+    return MetricsPayload{
+        CpuPercent:  cpuPct[0],
+        RamUsedMB:   memStat.Used / 1024 / 1024,
+        RamTotalMB:  memStat.Total / 1024 / 1024,
+        DiskUsedGB:  float64(diskStat.Used) / 1024 / 1024 / 1024,
+        DiskTotalGB: float64(diskStat.Total) / 1024 / 1024 / 1024,
+        CollectedAt: time.Now(),
+    }
+}
 ```
 
-#### Stop Service
+### 15.6 Proactive Service Monitoring (Go)
 
-```powershell
-Stop-Service -Name "W3SVC" -Force
+```go
+func monitorServices(interval time.Duration, allowedServices []string) {
+    ticker := time.NewTicker(interval)
+    previousStates := map[string]string{}
+
+    for range ticker.C {
+        for _, svc := range allowedServices {
+            current := getServiceStatus(svc) // queries SCM
+            prev, known := previousStates[svc]
+
+            if known && current != prev {
+                // State changed — report immediately
+                postServiceEvent(ServiceEvent{
+                    ServiceName:    svc,
+                    PreviousStatus: prev,
+                    CurrentStatus:  current,
+                    DetectedAt:     time.Now(),
+                })
+            }
+            previousStates[svc] = current
+        }
+    }
+}
 ```
 
-#### Restart Service
+### 15.7 Secure Token Storage (Windows DPAPI)
 
-```powershell
-Restart-Service -Name "W3SVC" -Force
+```go
+// On registration: encrypt and save to Windows Credential Manager
+func saveRuntimeToken(token string) error {
+    encrypted := dpapi.Encrypt([]byte(token))
+    return wincred.Set("SentraGuardAgent", "runtime_token", encrypted)
+}
+
+// On agent start: load and decrypt
+func loadRuntimeToken() (string, error) {
+    encrypted, err := wincred.Get("SentraGuardAgent", "runtime_token")
+    if err != nil { return "", err }
+    return string(dpapi.Decrypt(encrypted)), nil
+}
 ```
 
-#### Enable Service
+### 15.8 PowerShell Action Mapping
 
-```powershell
-Set-Service -Name "W3SVC" -StartupType Automatic
-```
+The dashboard never sends raw PowerShell. The agent maps safe actions to predefined commands:
 
-#### Disable Service
+| Action | PowerShell |
+|---|---|
+| `start_service` | `Start-Service -Name "<service>"` |
+| `stop_service` | `Stop-Service -Name "<service>" -Force` |
+| `restart_service` | `Restart-Service -Name "<service>" -Force` |
+| `enable_service` | `Set-Service -Name "<service>" -StartupType Automatic` |
+| `disable_service` | `Stop-Service -Name "<service>" -Force; Set-Service -Name "<service>" -StartupType Disabled` |
+| `get_service_status` | `Get-Service -Name "<service>" \| Select-Object Status,StartType` |
+| `sync_services` | `Get-Service \| Select-Object Name,DisplayName,Status,StartType` |
 
-```powershell
-Stop-Service -Name "W3SVC" -Force
-Set-Service -Name "W3SVC" -StartupType Disabled
-```
-
-### 15.6 Recommended Agent Build Command
+### 15.9 Agent Build Command
 
 ```bash
-go build -ldflags="-s -w" -o sentraguard-agent.exe ./cmd/sentraguard-agent
+GOOS=windows GOARCH=amd64 go build \
+  -ldflags="-s -w -X main.Version=1.2.0" \
+  -o sentraguard-agent.exe \
+  ./cmd/sentraguard-agent
 ```
 
 ---
@@ -1185,109 +1167,106 @@ go build -ldflags="-s -w" -o sentraguard-agent.exe ./cmd/sentraguard-agent
 
 ### 16.1 Security Principles
 
-- HTTPS only
+- HTTPS-only — no plaintext communication
 - No inbound custom agent port on Windows Server
-- No arbitrary shell execution
-- Agent token must be hashed in database
-- Runtime token must be revocable
-- Service command must be allowlisted
-- Service name must be validated
-- All actions must be audited
-- Dangerous actions should require stronger permission
+- No arbitrary shell or PowerShell execution from dashboard
+- Registration token is one-time use; stored as bcrypt hash in database
+- Runtime token stored in Windows Credential Manager (DPAPI-protected), never in plain text
+- Service commands restricted to a predefined action enum
+- Service name validated against the server-specific allowlist before execution
+- All actions are audited with actor, timestamp, and IP address
+- `audit_logs` table is append-only — no UPDATE or DELETE ever issued against it
+- Atomic command pickup via `SELECT ... FOR UPDATE` prevents duplicate execution
 
-### 16.2 Agent Authentication
+### 16.2 Token Lifecycle
 
-Recommended token lifecycle:
-
-1. Admin creates server record.
-2. Backend generates one-time registration token.
-3. Agent registers using token.
-4. Backend validates token hash.
-5. Backend returns runtime token.
-6. Agent stores runtime token locally.
-7. Runtime token is used for heartbeat, polling, and result submission.
-8. Admin can revoke token from dashboard.
+```
+1. Admin creates server record
+2. Backend generates one-time registration token (stored as bcrypt hash)
+3. Admin provides token to agent installer
+4. Agent POSTs token to /api/agent/register
+5. Backend validates token hash → marks token as used → returns runtime_token
+6. Agent encrypts runtime_token via Windows DPAPI → stores in Windows Credential Manager
+7. Runtime token used for all subsequent API calls
+8. Admin can revoke runtime token from dashboard at any time
+9. Revoked agent's API calls return 401 — agent stops polling
+```
 
 ### 16.3 Command Safety Rules
 
-Allowed command actions:
-
-```text
-start_service
-stop_service
-restart_service
-enable_service
-disable_service
-get_service_status
-sync_services
+**Allowed action enum:**
+```
+start_service, stop_service, restart_service,
+enable_service, disable_service,
+get_service_status, sync_services
 ```
 
-Forbidden design:
-
-```http
-POST /api/agent/execute-powershell
+**Explicitly forbidden:**
+```
+POST /api/agent/execute-powershell    ← Never implement
+POST /api/agent/run-script            ← Never implement
+POST /api/agent/execute-command       ← Never implement
 ```
 
-Reason: raw PowerShell execution can turn the system into a remote command execution platform.
+### 16.4 Service Allowlist
 
-### 16.4 Service Whitelist
+Only services explicitly allowed by an Admin can be controlled.
 
-Only whitelisted services can be controlled.
-
-Example allowed services:
-
-```text
-W3SVC
-MSSQLSERVER
-MyAppService
-Tomcat9
+**Example allowed services:**
+```
+W3SVC, MSSQLSERVER, MyAppService, Tomcat9, Redis, nginx
 ```
 
-Recommended blocked services:
-
-```text
-WinDefend
-EventLog
-RpcSs
-SamSs
-LanmanServer
-TermService
+**Services that should never be in the allowlist:**
 ```
+WinDefend, EventLog, RpcSs, SamSs, LanmanServer, TermService,
+CryptSvc, wuauserv, BFE, MpsSvc, Netlogon
+```
+
+The allowlist is enforced at **two layers**:
+1. **Backend**: `is_allowed = true` check before creating a command
+2. **Agent**: validates service name against local `allowed_services` config before executing
 
 ---
 
 ## 17. RBAC Matrix
 
 | Action | Super Admin | Admin | Operator | Viewer |
-|---|---:|---:|---:|---:|
-| View Dashboard | Yes | Yes | Yes | Yes |
-| Manage Users | Yes | No | No | No |
-| Manage Roles | Yes | No | No | No |
-| Add Server | Yes | Yes | No | No |
-| Generate Agent Token | Yes | Yes | No | No |
-| Revoke Agent | Yes | Yes | No | No |
-| View Services | Yes | Yes | Yes | Yes |
-| Start Service | Yes | Yes | Yes | No |
-| Stop Service | Yes | Yes | Yes | No |
-| Restart Service | Yes | Yes | Yes | No |
-| Enable Service | Yes | Yes | No | No |
-| Disable Service | Yes | Yes | No | No |
-| Manage Whitelist | Yes | Yes | No | No |
-| Retry Command | Yes | Yes | Yes | No |
-| Cancel Pending Command | Yes | Yes | Yes | No |
-| View Audit Logs | Yes | Yes | No | No |
-| System Settings | Yes | No | No | No |
+|---|:---:|:---:|:---:|:---:|
+| View Dashboard | ✅ | ✅ | ✅ | ✅ |
+| View Server List | ✅ | ✅ | ✅ | ✅ |
+| View Service List | ✅ | ✅ | ✅ | ✅ |
+| View Metrics | ✅ | ✅ | ✅ | ✅ |
+| Start Service | ✅ | ✅ | ✅ | ❌ |
+| Stop Service | ✅ | ✅ | ✅ | ❌ |
+| Restart Service | ✅ | ✅ | ✅ | ❌ |
+| Retry / Cancel Command | ✅ | ✅ | ✅ | ❌ |
+| Enable Service Startup | ✅ | ✅ | ❌ | ❌ |
+| Disable Service Startup | ✅ | ✅ | ❌ | ❌ |
+| Manage Service Allowlist | ✅ | ✅ | ❌ | ❌ |
+| Add / Edit Server | ✅ | ✅ | ❌ | ❌ |
+| Generate Agent Token | ✅ | ✅ | ❌ | ❌ |
+| Revoke Agent | ✅ | ✅ | ❌ | ❌ |
+| View Audit Logs | ✅ | ✅ | ❌ | ❌ |
+| Manage Users | ✅ | ❌ | ❌ | ❌ |
+| Manage Roles & Permissions | ✅ | ❌ | ❌ | ❌ |
+| System Settings | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
 ## 18. UI Structure
 
-### 18.1 Sidebar Menu
+### 18.1 Sidebar Navigation
 
-```text
+```
 Dashboard
 Servers
-Commands
+  └─ [Server Detail]
+       ├─ Overview
+       ├─ Services
+       ├─ Metrics
+       └─ Command History
+Commands (global queue)
 Audit Logs
 Users
 Roles & Permissions
@@ -1296,106 +1275,166 @@ Settings
 
 ### 18.2 Dashboard Page
 
-Dashboard cards:
-
+**Stat cards (top row):**
 - Total Servers
 - Online Agents
 - Offline Agents
 - Pending Commands
-- Failed Commands Today
-- Recently Updated Services
+- Failed Commands (today)
+- Service Events (today)
 
-Dashboard tables:
+**Charts:**
+- CPU usage across all servers (sparklines)
+- Command success/failure rate (last 24h)
 
+**Tables:**
 - Recent Commands
 - Offline Agents
+- Recent Service Events (proactive alerts)
 - Recent Audit Logs
-- Failed Service Actions
 
-### 18.3 Server List Page
+### 18.3 Server Detail Page
 
-Columns:
+**Tabs:**
 
-- Name
-- Hostname
-- Environment
-- Public IP
-- Private IP
-- Agent Version
-- Agent Status
-- Last Seen
-- Action
+**Overview** — hostname, OS, IP, environment, agent version, status, last heartbeat
 
-### 18.4 Server Detail Page
+**Metrics** — realtime charts (Livewire `wire:poll.10000ms`):
+- CPU % over time
+- RAM used / total
+- Disk used / total
 
-Sections:
+**Services** — table columns: Name, Display Name, Status, Startup Type, Allowed, Actions
 
-- Server Information
-- Agent Information
-- Service List
-- Command History
-- Audit Logs
-
-### 18.5 Service Table
-
-| Service | Display Name | Status | Startup Type | Allowed | Actions |
+| Service | Display Name | Status | Startup | Allowed | Actions |
 |---|---|---|---|---|---|
-| W3SVC | World Wide Web Publishing Service | Running | Automatic | Yes | Stop / Restart / Disable |
-| MSSQLSERVER | SQL Server | Running | Automatic | Yes | Stop / Restart / Disable |
-| Spooler | Print Spooler | Stopped | Manual | No | Not Allowed |
+| W3SVC | World Wide Web Publishing Service | Running | Automatic | ✅ | Stop / Restart / Disable |
+| MSSQLSERVER | SQL Server | Running | Automatic | ✅ | Stop / Restart / Disable |
+| Spooler | Print Spooler | Stopped | Manual | ❌ | — |
+
+**Command History** — table: Action, Service, Status, Requested By, Requested At, Finished At, Exit Code
+
+### 18.4 Metrics Component (Livewire)
+
+```php
+// app/Livewire/ServerMetrics.php
+class ServerMetrics extends Component
+{
+    public Server $server;
+    public array $history = [];
+
+    #[On('timer-refresh')]
+    public function refresh(): void
+    {
+        $this->history = ServerMetric::where('server_id', $this->server->id)
+            ->where('collected_at', '>=', now()->subHour())
+            ->orderBy('collected_at')
+            ->get(['cpu_percent', 'ram_used_mb', 'disk_used_gb', 'collected_at'])
+            ->toArray();
+    }
+
+    public function render()
+    {
+        return view('livewire.server-metrics');
+    }
+}
+```
+
+```html
+<!-- resources/views/livewire/server-metrics.blade.php -->
+<div wire:poll.10000ms="refresh">
+    <canvas id="cpu-chart" data-history="{{ json_encode($history) }}"></canvas>
+</div>
+```
 
 ---
 
 ## 19. Repository Structure
 
-```text
+```
 sentraguard-agentops/
-├── dashboard/
+├── dashboard/                          # Laravel 13 application
 │   ├── app/
-│   │   ├── Http/
+│   │   ├── Console/Commands/
+│   │   │   └── PruneMetrics.php        # Retention cleanup job
+│   │   ├── Http/Controllers/
+│   │   │   ├── Api/
+│   │   │   │   ├── AgentController.php
+│   │   │   │   ├── CommandController.php
+│   │   │   │   ├── MetricsController.php
+│   │   │   │   ├── ServerController.php
+│   │   │   │   └── ServiceController.php
+│   │   │   └── Dashboard/
+│   │   ├── Livewire/
+│   │   │   ├── ServerMetrics.php
+│   │   │   ├── ServiceTable.php
+│   │   │   └── CommandQueue.php
 │   │   ├── Models/
+│   │   │   ├── Agent.php
+│   │   │   ├── AuditLog.php
+│   │   │   ├── Server.php
+│   │   │   ├── ServerMetric.php
+│   │   │   ├── ServerService.php
+│   │   │   ├── ServiceCommand.php
+│   │   │   └── User.php
 │   │   ├── Policies/
-│   │   ├── Services/
-│   │   └── Jobs/
-│   ├── bootstrap/
-│   ├── config/
+│   │   │   ├── ServiceCommandPolicy.php
+│   │   │   └── ServerPolicy.php
+│   │   └── Services/
+│   │       ├── AgentTokenService.php
+│   │       ├── CommandService.php
+│   │       └── AuditService.php
 │   ├── database/
 │   │   ├── migrations/
 │   │   └── seeders/
-│   ├── resources/
-│   │   ├── views/
-│   │   └── css/
 │   ├── routes/
 │   │   ├── web.php
 │   │   └── api.php
 │   ├── docker-compose.yml
-│   └── README.md
+│   └── .env.example
 │
-├── agent/
+├── agent/                              # Go Windows Agent
 │   ├── cmd/
 │   │   └── sentraguard-agent/
 │   │       └── main.go
 │   ├── internal/
-│   │   ├── api/
+│   │   ├── api/                        # HTTP client to dashboard
+│   │   │   ├── client.go
+│   │   │   ├── register.go
+│   │   │   ├── heartbeat.go
+│   │   │   ├── poll.go
+│   │   │   ├── metrics.go
+│   │   │   └── events.go
 │   │   ├── config/
-│   │   ├── executor/
-│   │   ├── heartbeat/
-│   │   ├── logger/
-│   │   ├── service/
-│   │   └── windows/
+│   │   │   └── config.go
+│   │   ├── executor/                   # PowerShell executor
+│   │   │   ├── executor.go
+│   │   │   └── actions.go
+│   │   ├── metrics/                    # gopsutil collector
+│   │   │   └── collector.go
+│   │   ├── monitor/                    # Proactive service monitor
+│   │   │   └── monitor.go
+│   │   ├── security/                   # DPAPI / Credential Manager
+│   │   │   └── token.go
+│   │   ├── service/                    # Windows Service wrapper
+│   │   │   └── service.go
+│   │   └── logger/
+│   │       └── logger.go
 │   ├── build/
+│   │   └── build.bat
 │   ├── config.example.yaml
-│   └── README.md
+│   ├── go.mod
+│   └── go.sum
 │
 ├── installer/
 │   ├── inno-setup/
+│   │   └── setup.iss
 │   └── wix/
+│       └── setup.wxs
 │
 ├── docs/
-│   ├── project-brief.md
 │   ├── architecture.md
 │   ├── api-contract.md
-│   ├── database-schema.md
 │   ├── security.md
 │   ├── deployment.md
 │   └── agent-installation.md
@@ -1409,9 +1448,9 @@ sentraguard-agentops/
 
 ## 20. Environment Configuration
 
-### 20.1 Laravel `.env` Example
+### 20.1 Laravel `.env`
 
-```env
+```dotenv
 APP_NAME="SentraGuard AgentOps"
 APP_ENV=production
 APP_KEY=
@@ -1427,7 +1466,7 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=sentraguard
 DB_USERNAME=sentraguard
-DB_PASSWORD=change_this_password
+DB_PASSWORD=change_this_strong_password
 
 CACHE_STORE=redis
 QUEUE_CONNECTION=redis
@@ -1437,211 +1476,412 @@ REDIS_HOST=127.0.0.1
 REDIS_PASSWORD=null
 REDIS_PORT=6379
 
+# Agent configuration defaults (returned on registration)
 AGENT_DEFAULT_POLL_INTERVAL=5
 AGENT_DEFAULT_HEARTBEAT_INTERVAL=30
+AGENT_DEFAULT_METRICS_INTERVAL=15
+AGENT_DEFAULT_SERVICE_MONITOR_INTERVAL=30
 AGENT_COMMAND_TIMEOUT=60
 AGENT_OFFLINE_THRESHOLD_SECONDS=120
+
+# Retention policy
+METRICS_RETENTION_DAYS=30
+AUDIT_LOG_RETENTION_DAYS=90
 ```
 
-### 20.2 Agent Config Example
+### 20.2 Agent `config.yaml`
 
 ```yaml
 server_url: "https://console.example.com"
 agent_uid: "agt_01HXABCDEF"
-runtime_token: "runtime-token-here"
+
+# runtime_token is stored in Windows Credential Manager in production.
+# Uncomment only for local development:
+# runtime_token: "dev-token-here"
+
 poll_interval_seconds: 5
 heartbeat_interval_seconds: 30
+metrics_interval_seconds: 15
+service_monitor_interval_seconds: 30
 command_timeout_seconds: 60
+
 log_level: "info"
+log_max_size_mb: 50
+log_max_backups: 7
+
+allowed_services:
+  - W3SVC
+  - MSSQLSERVER
+  - MyAppService
+```
+
+### 20.3 Docker Compose
+
+```yaml
+services:
+  sentraguard-app:
+    build: .
+    environment:
+      - APP_ENV=production
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - sentraguard-mysql
+      - sentraguard-redis
+
+  sentraguard-nginx:
+    image: nginx:1.26-alpine
+    ports:
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+
+  sentraguard-worker:
+    build: .
+    command: php artisan queue:work redis --sleep=3 --tries=3
+
+  sentraguard-scheduler:
+    build: .
+    command: php artisan schedule:work
+
+  sentraguard-mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: sentraguard
+      MYSQL_USER: sentraguard
+      MYSQL_PASSWORD: change_this_strong_password
+      MYSQL_ROOT_PASSWORD: root_change_this_too
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  sentraguard-redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mysql_data:
+  redis_data:
 ```
 
 ---
 
-## 21. Deployment Design
+## 21. Installation Guide
 
-### 21.1 Dashboard Deployment
+### 21.1 Dashboard Installation
 
-Recommended production services:
+**Prerequisites:**
+- PHP 8.4 + Composer
+- MySQL 8.x
+- Redis 7.x
+- Node.js 22.x LTS
+- Nginx 1.26+
 
-```text
-Nginx
-PHP-FPM 8.4
-Laravel 13
-MySQL 8.x
-Redis
-Supervisor
-Queue Worker
-Scheduler
+```bash
+# 1. Clone and install dependencies
+git clone https://github.com/syahrullrmdhn/sentraguard.git
+cd sentraguard/dashboard
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+
+# 2. Configure environment
+cp .env.example .env
+php artisan key:generate
+
+# Edit .env with your DB credentials, Redis, and APP_URL
+nano .env
+
+# 3. Run database migrations and seeders
+php artisan migrate --force
+php artisan db:seed --class=RolePermissionSeeder
+
+# 4. Set file permissions
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+
+# 5. Start queue worker (via Supervisor)
+php artisan queue:work redis --sleep=3 --tries=3 --daemon
+
+# 6. Start scheduler (via Supervisor or cron)
+* * * * * cd /path/to/dashboard && php artisan schedule:run >> /dev/null 2>&1
+
+# OR using Docker Compose
+docker compose up -d
 ```
 
-Recommended Docker containers:
+### 21.2 Windows Agent Installation
 
-```text
-sentraguard-app
-sentraguard-nginx
-sentraguard-worker
-sentraguard-scheduler
-sentraguard-mysql
-sentraguard-redis
+**Prerequisites on Windows Server:**
+- Windows Server 2016 / 2019 / 2022
+- .NET Framework 4.8+ (for Inno Setup installer only)
+- Outbound TCP 443 to the SentraGuard Console
+
+**Method 1 — Interactive installer:**
+```
+1. Download SentraGuardAgentSetup.exe from the Releases page
+2. Run as Administrator
+3. Enter the Console URL and Agent Token when prompted
+4. Click Install
 ```
 
-### 21.2 Windows Agent Deployment
-
-Recommended packaging:
-
-```text
-SentraGuardAgentSetup.exe
+**Method 2 — Silent install (for GPO / deployment tools):**
+```powershell
+SentraGuardAgentSetup.exe /SILENT `
+  /server="https://console.example.com" `
+  /token="AGT_xxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-Installer tasks:
+**Method 3 — Manual install:**
+```powershell
+# 1. Copy binary
+mkdir "C:\Program Files\SentraGuard Agent"
+copy sentraguard-agent.exe "C:\Program Files\SentraGuard Agent\"
 
-- Copy `sentraguard-agent.exe` to `C:\Program Files\SentraGuard Agent\`
-- Create `C:\ProgramData\SentraGuard Agent\`
-- Write `config.yaml`
-- Register Windows Service
-- Start Windows Service
-- Add uninstall entry
-- Optionally write install log
+# 2. Register and install as Windows Service
+cd "C:\Program Files\SentraGuard Agent"
+.\sentraguard-agent.exe install --server https://console.example.com --token AGT_xxx
 
-### 21.3 Windows Firewall Requirement
+# 3. Start the service
+.\sentraguard-agent.exe start
 
-No custom inbound port is required for the agent.
+# 4. Verify
+.\sentraguard-agent.exe status
+.\sentraguard-agent.exe test-connection
+```
 
-Only outbound HTTPS is required:
+### 21.3 Agent Uninstallation
 
-```text
-TCP 443 outbound to SentraGuard Console
+```powershell
+cd "C:\Program Files\SentraGuard Agent"
+.\sentraguard-agent.exe stop
+.\sentraguard-agent.exe uninstall
+
+# Or via Add/Remove Programs if installed using the installer
+```
+
+### 21.4 Windows Firewall Requirement
+
+No inbound port needs to be opened. The agent only requires:
+
+```
+Protocol: TCP
+Direction: Outbound
+Destination: <SentraGuard Console IP or domain>
+Port: 443
 ```
 
 ---
 
-## 22. Development Roadmap
+## 22. Deployment Design
+
+### 22.1 Dashboard Deployment (Production)
+
+**Recommended server stack:**
+```
+Nginx 1.26+          → Reverse proxy + SSL termination
+PHP-FPM 8.4          → PHP process manager
+Laravel 13           → Application
+MySQL 8.x            → Primary database
+Redis 7.x            → Cache, sessions, and queue
+Supervisor           → Queue worker + scheduler process manager
+Certbot / acme.sh    → TLS certificate management
+```
+
+**Supervisor config example:**
+```ini
+[program:sentraguard-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/sentraguard/artisan queue:work redis --sleep=3 --tries=3
+autostart=true
+autorestart=true
+numprocs=2
+user=www-data
+redirect_stderr=true
+stdout_logfile=/var/log/supervisor/sentraguard-worker.log
+
+[program:sentraguard-scheduler]
+command=php /var/www/sentraguard/artisan schedule:work
+autostart=true
+autorestart=true
+numprocs=1
+user=www-data
+redirect_stderr=true
+stdout_logfile=/var/log/supervisor/sentraguard-scheduler.log
+```
+
+### 22.2 Metrics Retention (Scheduled Command)
+
+```php
+// app/Console/Commands/PruneMetrics.php
+class PruneMetrics extends Command
+{
+    protected $signature = 'metrics:prune';
+    protected $description = 'Delete old server_metrics and audit_logs beyond retention period';
+
+    public function handle(): void
+    {
+        $metricsDays = (int) config('agent.metrics_retention_days', 30);
+        $auditDays   = (int) config('agent.audit_log_retention_days', 90);
+
+        ServerMetric::where('collected_at', '<', now()->subDays($metricsDays))->delete();
+        AuditLog::where('created_at', '<', now()->subDays($auditDays))->delete();
+
+        $this->info("Pruned metrics older than {$metricsDays} days.");
+        $this->info("Pruned audit logs older than {$auditDays} days.");
+    }
+}
+
+// routes/console.php
+Schedule::command('metrics:prune')->dailyAt('02:00');
+```
+
+---
+
+## 23. Development Roadmap
 
 ### Phase 1 — Foundation
 
-- Initialize Laravel 13 project
-- Configure PHP 8.4 runtime
-- Configure MySQL database
-- Setup authentication
-- Setup role and permission structure
-- Create base admin layout
-- Create server CRUD
-- Create token generation flow
+- [ ] Initialize Laravel 13 project with PHP 8.4
+- [ ] Configure MySQL and Redis
+- [ ] Set up authentication (Laravel Breeze or custom)
+- [ ] Implement role and permission structure
+- [ ] Create base admin layout (Blade + Livewire + Tailwind)
+- [ ] Create server CRUD with token generation
+- [ ] Create database migrations including `server_metrics`
 
 ### Phase 2 — Agent MVP
 
-- Initialize Go agent project
-- Create config loader
-- Create logging module
-- Create install/uninstall Windows Service command
-- Create register API client
-- Create heartbeat loop
-- Create command polling loop
-- Create PowerShell executor
-- Build `sentraguard-agent.exe`
+- [ ] Initialize Go agent project (`go mod init`)
+- [ ] Create config loader (YAML)
+- [ ] Create Windows Service wrapper (`golang.org/x/sys/windows/svc`)
+- [ ] Create register API client
+- [ ] Create heartbeat loop
+- [ ] Create metrics collector (`gopsutil`)
+- [ ] Build `sentraguard-agent.exe`
 
 ### Phase 3 — Command Execution
 
-- Implement command queue table
-- Implement dashboard service action button
-- Implement service whitelist validation
-- Implement agent command polling
-- Implement command result submission
-- Implement command status update
+- [ ] Implement command queue with `lockForUpdate` pickup
+- [ ] Implement dashboard service action buttons
+- [ ] Implement agent command polling loop
+- [ ] Implement predefined PowerShell executor
+- [ ] Implement allowlist validation (backend + agent)
+- [ ] Implement command result submission
+- [ ] Implement command timeout handling
 
-### Phase 4 — Service Sync
+### Phase 4 — Metrics & Service Monitor
 
-- Agent reads Windows Services
-- Agent sends service list to backend
-- Backend upserts `server_services`
-- Dashboard displays service status
-- Dashboard displays startup type
+- [ ] Agent: post metrics to `/api/agent/metrics` every 15s
+- [ ] Backend: store metrics in `server_metrics`
+- [ ] Dashboard: Livewire metrics chart with `wire:poll`
+- [ ] Agent: proactive service monitor loop every 30s
+- [ ] Backend: handle `POST /api/agent/service-events`
+- [ ] Dashboard: display proactive service events
 
 ### Phase 5 — Security Hardening
 
-- Hash registration token
-- Add runtime token revocation
-- Add RBAC policy checks
-- Add audit logging
-- Add command timeout
-- Add offline detection scheduler
-- Add service whitelist enforcement
+- [ ] Implement bcrypt token hashing on registration
+- [ ] Implement Windows DPAPI / Credential Manager for agent token
+- [ ] Implement runtime token revocation
+- [ ] Implement RBAC policy checks on all endpoints
+- [ ] Implement full audit logging
+- [ ] Implement offline detection scheduler
+- [ ] Implement metrics data retention / pruning
 
-### Phase 6 — Installer and Release
+### Phase 6 — Installer & Release
 
-- Create Windows installer
-- Add version command
-- Add agent log rotation
-- Add release documentation
-- Add installation guide
-- Add deployment guide
-
----
-
-## 23. MVP Acceptance Criteria
-
-The MVP is considered complete when:
-
-- Admin can login to dashboard.
-- Admin can create server record.
-- Admin can generate agent token.
-- Agent `.exe` can be installed on Windows Server.
-- Agent can register to backend.
-- Agent can send heartbeat.
-- Dashboard can display agent online/offline.
-- Agent can sync Windows Services.
-- Admin can whitelist service.
-- Admin can start allowed service.
-- Admin can stop allowed service.
-- Admin can restart allowed service.
-- Admin can enable service startup.
-- Admin can disable service startup.
-- Agent can submit command result.
-- Dashboard stores command history.
-- Dashboard stores audit logs.
-- Revoked agent cannot poll command.
+- [ ] Create Inno Setup installer with silent install support
+- [ ] Implement `sentraguard-agent.exe version` command
+- [ ] Add agent log rotation
+- [ ] Write deployment and agent installation documentation
+- [ ] Tag first release
 
 ---
 
-## 24. Risk Register
+## 24. MVP Acceptance Criteria
+
+The MVP is considered complete when all of the following pass:
+
+- [ ] Admin can log in to the dashboard
+- [ ] Admin can create a server record and generate an agent token
+- [ ] Agent `.exe` installs as a Windows Service
+- [ ] Agent registers to the backend and receives a runtime token
+- [ ] Agent sends periodic heartbeat
+- [ ] Dashboard correctly shows agent online / offline
+- [ ] Agent collects and posts CPU / RAM / Disk metrics every 15s
+- [ ] Dashboard displays near-realtime metrics charts
+- [ ] Agent syncs Windows Services on request
+- [ ] Agent proactively reports service state changes
+- [ ] Admin can add a service to the allowlist
+- [ ] Admin can start, stop, and restart an allowed service
+- [ ] Admin can enable and disable service startup
+- [ ] Commands are atomically picked up (no duplicate execution)
+- [ ] Agent submits command results with exit code and output
+- [ ] Dashboard stores full command history
+- [ ] Dashboard stores full audit logs
+- [ ] Revoked agent receives 401 and stops polling
+- [ ] Metrics older than 30 days are automatically pruned
+
+---
+
+## 25. Risk Register
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Agent token leaked | Unauthorized agent registration | Use one-time token, hash storage, token expiration, revoke capability |
-| Runtime token leaked | Unauthorized polling/reporting | Runtime token rotation and revoke support |
-| Dangerous service disabled | Server outage | Service whitelist, RBAC, confirmation modal, optional approval workflow |
-| Raw command execution abused | Full system compromise | Never implement raw PowerShell endpoint |
-| Agent offline | Command not executed | Heartbeat monitoring and offline detection |
-| Duplicate command execution | Service instability | Command locking and status transition control |
-| Long-running command | Worker hang | Timeout enforcement |
-| MySQL data growth | Slow dashboard | Indexing, pagination, audit retention policy |
-| Operator mistake | Service outage | Audit log, confirmation, role separation |
+| Agent token leaked | Unauthorized agent registration | One-time token, bcrypt hash, token expiration, revocation capability |
+| Runtime token leaked | Unauthorized polling and command submission | Windows DPAPI storage, runtime token rotation, revocation |
+| Stop of critical system service | Server outage | Allowlist enforcement (backend + agent), RBAC, confirmation modal |
+| Raw command execution abused | Full system compromise | Never implement raw PowerShell endpoint — action enum only |
+| Duplicate command execution | Service instability from double restart | `SELECT ... FOR UPDATE` atomic pickup |
+| Agent offline — command stuck | Command never executed | Heartbeat monitoring, offline detection, command timeout, retry |
+| MySQL data growth from metrics | Slow dashboard queries | Indexed queries, daily retention pruning, optional partitioning |
+| Long-running PowerShell command | Worker hang | Command timeout enforcement with forceful process kill |
+| Operator error (stop wrong service) | Service outage | Allowlist, RBAC role separation, confirmation UI, full audit trail |
+| Token stored in plain text YAML | Credential theft from disk | Windows DPAPI / Credential Manager for production |
 
 ---
 
-## 25. References
+## 26. Contributing
 
-- Laravel 13 Documentation: https://laravel.com/docs/13.x
-- Laravel 13 Release Notes: https://laravel.com/docs/13.x/releases
-- Laravel Installation Documentation: https://laravel.com/docs/13.x/installation
-- MySQL Documentation: https://dev.mysql.com/doc/
-- MySQL 8.4 Release Notes: https://dev.mysql.com/doc/relnotes/mysql/8.4/en/
-- Mermaid Diagrams: https://mermaid.js.org/
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Follow the coding standards:
+   - Laravel: PSR-12, Laravel conventions
+   - Go: `gofmt`, `golint`, standard Go project layout
+4. Write tests for new features
+5. Submit a pull request against the `main` branch
+
+**Branch naming:**
+```
+feature/  → new features
+fix/      → bug fixes
+chore/    → tooling, dependencies, CI
+docs/     → documentation only
+```
+
+---
+
+## 27. References
+
+- [Laravel 13 Documentation](https://laravel.com/docs/13.x)
+- [Laravel Livewire 3](https://livewire.laravel.com)
+- [Go Documentation](https://go.dev/doc/)
+- [gopsutil — Go system and process utilities](https://github.com/shirou/gopsutil)
+- [golang.org/x/sys — Windows Service support](https://pkg.go.dev/golang.org/x/sys/windows/svc)
+- [Inno Setup Documentation](https://jrsoftware.org/ishelp/)
+- [MySQL 8.x Documentation](https://dev.mysql.com/doc/)
+- [Redis Documentation](https://redis.io/docs/)
+- [Windows DPAPI](https://docs.microsoft.com/en-us/windows/win32/api/dpapi/)
+- [Windows Service Control Manager](https://docs.microsoft.com/en-us/windows/win32/services/service-control-manager)
 
 ---
 
 ## License
 
-This project brief is prepared for internal planning and repository documentation. Choose an appropriate license before publishing the source code.
-
-Recommended options:
-
-- MIT License for open-source distribution
-- Proprietary license for internal company tools
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
 ## Author
 
-Prepared by **Syahrul Ramadhan**.
-
+Prepared and maintained by **Syahrul Ramadhan**.
