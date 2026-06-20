@@ -2,8 +2,103 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../../app/Livewire/**/*.php';
+
+/*
+|--------------------------------------------------------------------------
+| SentraGuard Fusion Design System
+|--------------------------------------------------------------------------
+| Swiss (grid + type + palette)  ·  Neo-brutalism (borders + hard shadow)
+| Glassmorphism (sidebar/topbar) ·  Neumorphism (inputs + tiles + toggles)
+*/
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Space Grotesk', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+    /* Swiss palette: paper, ink, single disciplined accent + brutalist secondary */
+    --color-paper: #ecebe4;
+    --color-paper-soft: #f3f2ec;
+    --color-ink: #111111;
+    --color-ink-soft: #3a3a38;
+    --color-accent: #2d3dff;      /* electric blue (primary action) */
+    --color-accent-2: #e8ff47;    /* brutalist lime (highlight) */
+    --color-danger: #ff4d4d;
+    --color-ok: #00c281;
+}
+
+@layer base {
+    body {
+        background-color: var(--color-paper);
+        background-image:
+            linear-gradient(rgba(17, 17, 17, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(17, 17, 17, 0.035) 1px, transparent 1px);
+        background-size: 28px 28px; /* Swiss grid underlay */
+        color: var(--color-ink);
+    }
+}
+
+@layer components {
+    /* ---- Neo-brutalism ---- */
+    .brutal {
+        border: 2px solid var(--color-ink);
+        box-shadow: 4px 4px 0 0 var(--color-ink);
+        background: #fff;
+    }
+    .brutal-lg {
+        border: 2.5px solid var(--color-ink);
+        box-shadow: 6px 6px 0 0 var(--color-ink);
+        background: #fff;
+    }
+    .brutal-hover {
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .brutal-hover:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 6px 6px 0 0 var(--color-ink);
+    }
+    .brutal-press:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 0 var(--color-ink);
+    }
+
+    /* ---- Glassmorphism ---- */
+    .glass {
+        background: rgba(243, 242, 236, 0.65);
+        backdrop-filter: blur(14px) saturate(140%);
+        -webkit-backdrop-filter: blur(14px) saturate(140%);
+        border: 1px solid rgba(17, 17, 17, 0.12);
+    }
+    .glass-dark {
+        background: rgba(17, 17, 17, 0.58);
+        backdrop-filter: blur(22px) saturate(160%);
+        -webkit-backdrop-filter: blur(22px) saturate(160%);
+        border-right: 2px solid var(--color-ink);
+    }
+
+    /* ---- Neumorphism (on paper bg) ---- */
+    .neu {
+        background: var(--color-paper);
+        border-radius: 16px;
+        box-shadow: 6px 6px 12px rgba(17, 17, 17, 0.12), -6px -6px 12px rgba(255, 255, 255, 0.85);
+    }
+    .neu-inset {
+        background: var(--color-paper);
+        border-radius: 12px;
+        box-shadow: inset 4px 4px 8px rgba(17, 17, 17, 0.12), inset -4px -4px 8px rgba(255, 255, 255, 0.85);
+    }
+
+    /* ---- Swiss type helpers ---- */
+    .swiss-label {
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--color-ink-soft);
+    }
+    .swiss-display {
+        letter-spacing: -0.02em;
+        font-weight: 700;
+    }
 }
