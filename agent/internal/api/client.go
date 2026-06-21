@@ -85,9 +85,10 @@ type ServiceEventRequest struct {
 
 // Command is a pending command returned from the poll endpoint.
 type Command struct {
-	ID          int    `json:"id"`
-	ServiceName string `json:"service_name"`
-	Action      string `json:"action"`
+	ID          int                    `json:"id"`
+	ServiceName string                 `json:"service_name"`
+	Action      string                 `json:"action"`
+	Payload     map[string]interface{} `json:"payload"`
 }
 
 type PollResponse struct {

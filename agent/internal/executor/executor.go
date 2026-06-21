@@ -13,13 +13,18 @@ type Result struct {
 // Allowed actions the agent will execute. The dashboard never sends raw
 // PowerShell — only these action keys are accepted.
 var allowedActions = map[string]bool{
-	"start_service":      true,
-	"stop_service":       true,
-	"restart_service":    true,
-	"enable_service":     true,
-	"disable_service":    true,
-	"get_service_status": true,
-	"sync_services":      true,
+	"start_service":         true,
+	"stop_service":          true,
+	"restart_service":       true,
+	"enable_service":        true,
+	"disable_service":       true,
+	"get_service_status":    true,
+	"sync_services":         true,
+	"firewall_add_rule":     true,
+	"firewall_enable_rule":  true,
+	"firewall_disable_rule": true,
+	"firewall_delete_rule":  true,
+	"firewall_sync":         true,
 }
 
 // IsAllowed reports whether an action key is permitted.

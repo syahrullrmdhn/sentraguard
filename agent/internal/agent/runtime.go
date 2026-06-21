@@ -2,12 +2,14 @@ package agent
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/syahrullrmdhn/sentraguard/agent/internal/api"
 	"github.com/syahrullrmdhn/sentraguard/agent/internal/config"
 	"github.com/syahrullrmdhn/sentraguard/agent/internal/executor"
+	"github.com/syahrullrmdhn/sentraguard/agent/internal/firewall"
 	"github.com/syahrullrmdhn/sentraguard/agent/internal/logging"
 	"github.com/syahrullrmdhn/sentraguard/agent/internal/metrics"
 	"github.com/syahrullrmdhn/sentraguard/agent/internal/services"
@@ -18,10 +20,11 @@ var Version = "dev"
 
 // Runtime wires together the agent's background loops.
 type Runtime struct {
-	cfg    *config.Config
-	client *api.Client
-	svcs   services.Manager
-	log    *logging.Logger
+	cfg      *config.Config
+	client   *api.Client
+	svcs     services.Manager
+	firewall *firewall.Manager
+	log      *logging.Logger
 
 	prevStates map[string]string
 	mu         sync.Mutex
@@ -34,6 +37,7 @@ func New(cfg *config.Config, client *api.Client, log *logging.Logger) *Runtime {
 		client:     client,
 		log:        log,
 		svcs:       services.NewManager(log),
+		firewall:   firewall.NewManager(),
 		prevStates: map[string]string{},
 	}
 }
@@ -140,16 +144,27 @@ func (r *Runtime) pollAndExecute() {
 	cmd := resp.Command
 	r.log.Info("picked command #%d: %s on %s", cmd.ID, cmd.Action, cmd.ServiceName)
 
-	result, execErr := executor.Execute(cmd.Action, cmd.ServiceName, r.cfg.CommandTimeoutSeconds)
+	var result executor.Result
+	var execErr error
+
+	// Route firewall commands to firewall manager
+	if strings.HasPrefix(cmd.Action, "firewall_") {
+		result, execErr = r.executeFirewallCommand(cmd)
+	} else {
+		result, execErr = executor.Execute(cmd.Action, cmd.ServiceName, r.cfg.CommandTimeoutSeconds)
+	}
+
 	if execErr != nil {
 		r.log.Warn("command #%d failed: %v", cmd.ID, execErr)
 	}
 
 	// Capture post-execution service status for the dashboard.
 	var svcStatus, startup string
-	if info, err := r.svcs.Info(cmd.ServiceName); err == nil {
-		svcStatus = info.Status
-		startup = info.StartupType
+	if cmd.ServiceName != "" {
+		if info, err := r.svcs.Info(cmd.ServiceName); err == nil {
+			svcStatus = info.Status
+			startup = info.StartupType
+		}
 	}
 
 	if err := r.client.SubmitResult(cmd.ID, api.CommandResultRequest{
@@ -164,6 +179,43 @@ func (r *Runtime) pollAndExecute() {
 		return
 	}
 	r.log.Info("command #%d reported: %s (exit=%d)", cmd.ID, result.Status, result.ExitCode)
+}
+
+func (r *Runtime) executeFirewallCommand(cmd *api.Command) (executor.Result, error) {
+	// Use Payload field directly
+	payload := cmd.Payload
+	if payload == nil {
+		return executor.Result{Status: "failed", ExitCode: -1, Stderr: "Missing payload"}, nil
+	}
+
+	ruleName, _ := payload["rule_name"].(string)
+	if ruleName == "" {
+		return executor.Result{Status: "failed", ExitCode: -1, Stderr: "Missing rule_name"}, nil
+	}
+
+	var err error
+	switch cmd.Action {
+	case "firewall_add_rule":
+		direction, _ := payload["direction"].(string)
+		protocol, _ := payload["protocol"].(string)
+		port, _ := payload["port"].(string)
+		action, _ := payload["action"].(string)
+		err = r.firewall.AddRule(ruleName, direction, protocol, port, action)
+	case "firewall_enable_rule":
+		err = r.firewall.EnableRule(ruleName)
+	case "firewall_disable_rule":
+		err = r.firewall.DisableRule(ruleName)
+	case "firewall_delete_rule":
+		err = r.firewall.DeleteRule(ruleName)
+	default:
+		return executor.Result{Status: "failed", ExitCode: -1, Stderr: "Unknown firewall action"}, nil
+	}
+
+	if err != nil {
+		return executor.Result{Status: "failed", ExitCode: 1, Stderr: err.Error()}, err
+	}
+
+	return executor.Result{Status: "success", ExitCode: 0, Stdout: "Firewall command executed"}, nil
 }
 
 func (r *Runtime) monitorServices() {

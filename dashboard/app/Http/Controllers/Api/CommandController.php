@@ -66,6 +66,7 @@ class CommandController extends Controller
                 'action' => $command->action,
                 'service_name' => $command->service_name,
                 'timeout_seconds' => $command->timeout_seconds,
+                'payload' => $command->payload ? json_decode($command->payload, true) : null,
             ],
         ]);
     }

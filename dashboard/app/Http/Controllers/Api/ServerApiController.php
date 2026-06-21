@@ -284,7 +284,7 @@ class ServerApiController extends Controller
     /**
      * POST /api/servers/{server}/firewall — create new firewall rule
      */
-    public function createFirewallRule(Request $request, Server $server, AuditService $audit): JsonResponse
+    public function createFirewallRule(Request $request, Server $server, AuditService $audit, CommandService $commands): JsonResponse
     {
         $data = $request->validate([
             'rule_name' => ['required', 'string', 'max:255'],
@@ -305,13 +305,28 @@ class ServerApiController extends Controller
             serverId: $server->id,
         );
 
+        // Queue command to agent
+        $commands->queueRaw(
+            server: $server,
+            action: 'firewall_add_rule',
+            userId: $request->user()->id,
+            payload: [
+                'rule_id' => $rule->id,
+                'rule_name' => $rule->rule_name,
+                'direction' => $rule->direction,
+                'protocol' => $rule->protocol,
+                'port' => $rule->port,
+                'action' => $rule->action,
+            ]
+        );
+
         return response()->json(['rule' => $rule], 201);
     }
 
     /**
      * PATCH /api/servers/{server}/firewall/{rule}/toggle — toggle rule enabled
      */
-    public function toggleFirewallRule(Server $server, FirewallRule $rule, AuditService $audit): JsonResponse
+    public function toggleFirewallRule(Server $server, FirewallRule $rule, AuditService $audit, CommandService $commands): JsonResponse
     {
         abort_unless($rule->server_id === $server->id, 404);
 
@@ -325,23 +340,47 @@ class ServerApiController extends Controller
             serverId: $server->id,
         );
 
+        // Queue command to agent
+        $commands->queueRaw(
+            server: $server,
+            action: $rule->is_enabled ? 'firewall_enable_rule' : 'firewall_disable_rule',
+            userId: auth()->id(),
+            payload: [
+                'rule_id' => $rule->id,
+                'rule_name' => $rule->rule_name,
+            ]
+        );
+
         return response()->json(['rule' => $rule->fresh()]);
     }
 
     /**
      * DELETE /api/servers/{server}/firewall/{rule} — delete rule
      */
-    public function deleteFirewallRule(Server $server, FirewallRule $rule, AuditService $audit): JsonResponse
+    public function deleteFirewallRule(Server $server, FirewallRule $rule, AuditService $audit, CommandService $commands): JsonResponse
     {
         abort_unless($rule->server_id === $server->id, 404);
 
         $ruleName = $rule->rule_name;
+        $ruleId = $rule->id;
+        
+        // Queue command to agent BEFORE deleting DB record
+        $commands->queueRaw(
+            server: $server,
+            action: 'firewall_delete_rule',
+            userId: auth()->id(),
+            payload: [
+                'rule_id' => $ruleId,
+                'rule_name' => $ruleName,
+            ]
+        );
+
         $rule->delete();
 
         $audit->userAction(
             action: 'firewall.rule_deleted',
             resourceType: 'firewall_rule',
-            resourceId: (string) $rule->id,
+            resourceId: (string) $ruleId,
             description: "Deleted firewall rule {$ruleName}",
             serverId: $server->id,
         );

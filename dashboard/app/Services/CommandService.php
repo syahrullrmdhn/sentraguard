@@ -18,6 +18,11 @@ class CommandService
         'get_service_status',
         'sync_services',
         'update', // Agent self-update command
+        'firewall_add_rule',
+        'firewall_enable_rule',
+        'firewall_disable_rule',
+        'firewall_delete_rule',
+        'firewall_sync',
     ];
 
     public function __construct(
