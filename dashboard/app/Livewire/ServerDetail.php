@@ -102,20 +102,23 @@ class ServerDetail extends Component
 
     /**
      * Generate PowerShell script untuk install agent versi terbaru.
-     * Script ini auto-include token dari server saat ini.
+     * Karena token plaintext nggak disimpan (cuma hash), kita generate token baru.
      */
     protected function generateUpdateScript(): void
     {
         $latestVersion = config('agent.latest_version', '1.0.6');
         $downloadUrl = config('agent.download_url', url('/download/agent'));
         $serverUrl = config('app.url');
-        $token = $this->server->agent?->token ?? 'TOKEN_NOT_FOUND';
+        
+        // Generate token baru untuk update (token lama udah di-hash, nggak bisa diambil lagi)
+        $token = 'AGT_' . bin2hex(random_bytes(20));
+        $this->server->update(['registration_token' => $token]);
 
         $this->updateScript = <<<POWERSHELL
 # ========================================
 # SentraGuard Agent v{$latestVersion} Update Script
 # Server: {$this->server->name}
-# Generated: {{ now()->format('Y-m-d H:i:s') }}
+# Generated: {now()->format('Y-m-d H:i:s')}
 # ========================================
 
 Write-Host "`n🛑 Step 1: Stop & uninstall agent lama..." -ForegroundColor Yellow
@@ -133,7 +136,7 @@ Invoke-RestMethod "{$downloadUrl}?v=\$(Get-Random)" -OutFile \$env:TEMP\sentragu
 Write-Host "`n✅ Step 4: Verify version..." -ForegroundColor Yellow
 & "\$env:TEMP\sentraguard-agent.exe" version
 
-Write-Host "`n🚀 Step 5: Installing with saved token..." -ForegroundColor Yellow
+Write-Host "`n🚀 Step 5: Installing with fresh token..." -ForegroundColor Yellow
 & "\$env:TEMP\sentraguard-agent.exe" install --server {$serverUrl} --token {$token}
 
 Write-Host "`n⏳ Step 6: Wait for agent startup (30s)..." -ForegroundColor Yellow
