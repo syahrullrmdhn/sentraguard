@@ -115,6 +115,7 @@ func register(serverURL, regToken string) (*config.Config, error) {
 		OSVersion:    osVersion(),
 		AgentVersion: Version,
 		PrivateIP:    privateIP(),
+		PublicIP:     publicIP(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("registration failed: %w", err)

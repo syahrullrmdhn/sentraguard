@@ -42,6 +42,7 @@ type RegisterRequest struct {
 	OSVersion    string `json:"os_version"`
 	AgentVersion string `json:"agent_version"`
 	PrivateIP    string `json:"private_ip"`
+	PublicIP     string `json:"public_ip"`
 }
 
 type RegisterResponse struct {
