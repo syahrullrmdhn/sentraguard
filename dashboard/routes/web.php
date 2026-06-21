@@ -25,3 +25,6 @@ Route::middleware('auth')->group(function () {
     Route::view('/commands', 'commands.index')->name('commands.index');
     Route::view('/audit', 'audit.index')->name('audit.index');
 });
+
+// Public download endpoint (no auth — Cloudflare Tunnel style)
+Route::get('/download/agent', [App\Http\Controllers\DownloadController::class, 'agent'])->name('download.agent');

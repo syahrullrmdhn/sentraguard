@@ -74,16 +74,53 @@
                 @if ($generatedToken)
                     <div class="flex items-center gap-2">
                         <span class="flex h-8 w-8 items-center justify-center bg-ok text-white brutal text-sm font-bold">✓</span>
-                        <h3 class="text-lg swiss-display text-ink">Server dibuat</h3>
+                        <h3 class="text-lg swiss-display text-ink">Server {{ $generatedServerName }} siap</h3>
                     </div>
-                    <p class="mt-3 text-sm text-ink-soft">Salin token registrasi untuk <strong>{{ $generatedServerName }}</strong>. Token ini hanya ditampilkan sekali.</p>
-                    <div class="mt-4 border-2 border-ink bg-accent-2/30 p-3">
-                        <code class="block break-all text-xs text-ink" style="font-family: var(--font-mono);">{{ $generatedToken }}</code>
+                    <p class="mt-3 text-sm text-ink-soft">Jalankan perintah ini di <strong>PowerShell (Administrator)</strong> di server Windows. Agent akan terinstall dan connect otomatis.</p>
+                    
+                    {{-- Cloudflare Tunnel-style one-liner --}}
+                    <div class="mt-4 border-2 border-ink bg-accent-2/10 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <code id="install-cmd" class="block flex-1 overflow-x-auto text-xs leading-relaxed text-ink" style="font-family: var(--font-mono);">irm {{ rtrim(config('app.url'), '/') }}/download/agent -OutFile $env:TEMP\sentraguard-agent.exe; &amp; "$env:TEMP\sentraguard-agent.exe" install --server {{ rtrim(config('app.url'), '/') }} --token {{ $generatedToken }}</code>
+                            <button onclick="copyInstallCommand()" 
+                                    class="shrink-0 bg-accent px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white brutal brutal-hover brutal-press">
+                                Salin
+                            </button>
+                        </div>
                     </div>
-                    <p class="mt-2 text-xs text-ink-soft/70">Gunakan token ini saat instalasi agent dengan <code>--token</code>.</p>
+                    <p class="mt-2 text-xs text-ink-soft/70">Perintah ini akan: download agent → install sebagai Windows Service → connect ke dashboard. Token <strong>hanya ditampilkan sekali</strong>.</p>
+
+                    {{-- Collapsible: manual steps --}}
+                    <details class="mt-4 border-t-2 border-ink/10 pt-4">
+                        <summary class="cursor-pointer text-xs font-bold uppercase tracking-wide text-ink-soft hover:text-ink swiss-label">Instalasi manual (opsional)</summary>
+                        <div class="mt-3 space-y-2 text-xs text-ink-soft">
+                            <p>1. Download agent: <a href="{{ route('download.agent') }}" class="font-mono text-accent underline">sentraguard-agent.exe</a></p>
+                            <p>2. Jalankan di PowerShell (Admin):</p>
+                            <code class="block border-2 border-ink/20 bg-paper-soft p-2 text-ink" style="font-family: var(--font-mono);">.\sentraguard-agent.exe install --server {{ rtrim(config('app.url'), '/') }} --token {{ $generatedToken }}</code>
+                        </div>
+                    </details>
+
                     <div class="mt-6 flex justify-end">
                         <button wire:click="$set('showCreate', false)" class="bg-ink px-4 py-2 text-sm font-bold uppercase tracking-wide text-white brutal brutal-hover brutal-press">Selesai</button>
                     </div>
+
+                    <script>
+                        function copyInstallCommand() {
+                            const code = document.getElementById('install-cmd').innerText;
+                            navigator.clipboard.writeText(code).then(() => {
+                                const btn = event.target;
+                                const orig = btn.textContent;
+                                btn.textContent = '✓ Tersalin';
+                                btn.classList.add('bg-ok');
+                                btn.classList.remove('bg-accent');
+                                setTimeout(() => {
+                                    btn.textContent = orig;
+                                    btn.classList.remove('bg-ok');
+                                    btn.classList.add('bg-accent');
+                                }, 2000);
+                            });
+                        }
+                    </script>
                 @else
                     <h3 class="text-lg swiss-display text-ink">Tambah Server</h3>
                     <form wire:submit="createServer" class="mt-4 space-y-4">
