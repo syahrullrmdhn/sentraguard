@@ -121,6 +121,13 @@ func (h *serviceHandler) Execute(args []string, r <-chan svc.ChangeRequest, chan
 
 	go func() {
 		log := logging.New("info", config.LogDir())
+		defer func() {
+			if rec := recover(); rec != nil {
+				log.Error("service worker PANIC: %v", rec)
+				changes <- svc.Status{State: svc.Stopped, Win32ExitCode: 1}
+			}
+		}()
+		log.Info("service worker goroutine entered")
 		cfg, err := config.Load("")
 		if err != nil {
 			log.Error("service worker: load config failed: %v", err)

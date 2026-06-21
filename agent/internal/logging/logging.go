@@ -35,13 +35,29 @@ func parseLevel(s string) int {
 	}
 }
 
-// New creates a logger at the given level, writing to both stdout and
-// <logDir>/agent.log (created if needed). If the file can't be opened, it
-// falls back to stdout only.
+// safeMultiWriter writes to all underlying writers and, unlike io.MultiWriter,
+// does NOT abort when one writer errors. This is critical for Windows Services,
+// where os.Stdout is an invalid handle: a stdout write error must never block
+// writes to the log file.
+type safeMultiWriter struct {
+	writers []io.Writer
+}
+
+func (s *safeMultiWriter) Write(p []byte) (int, error) {
+	for _, w := range s.writers {
+		_, _ = w.Write(p)
+	}
+	return len(p), nil
+}
+
+// New creates a logger at the given level, writing to both a log file and
+// stdout. The log FILE is written first and independently of stdout, so a
+// broken stdout (e.g. running as a Windows Service with no console) can never
+// prevent file logging.
 func New(level, logDir string) *Logger {
 	var writers []io.Writer
-	writers = append(writers, os.Stdout)
 
+	// File first, so it always gets written regardless of stdout state.
 	if logDir != "" {
 		if err := os.MkdirAll(logDir, 0o755); err == nil {
 			f, err := os.OpenFile(filepath.Join(logDir, "agent.log"),
@@ -52,9 +68,11 @@ func New(level, logDir string) *Logger {
 		}
 	}
 
+	writers = append(writers, os.Stdout)
+
 	return &Logger{
 		level: parseLevel(level),
-		std:   log.New(io.MultiWriter(writers...), "", log.LstdFlags|log.LUTC),
+		std:   log.New(&safeMultiWriter{writers: writers}, "", log.LstdFlags|log.LUTC),
 	}
 }
 
