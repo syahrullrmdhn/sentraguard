@@ -13,6 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Enable Sanctum SPA cookie auth: API routes from stateful domains
+        // receive session + CSRF handling so cookie-based login works.
+        $middleware->statefulApi();
+
         $middleware->alias([
             'agent.auth' => \App\Http\Middleware\AuthenticateAgent::class,
         ]);

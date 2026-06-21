@@ -16,6 +16,32 @@ class CommandController extends Controller
     ) {}
 
     /**
+     * GET /api/commands — global command queue for the dashboard SPA.
+     */
+    public function indexForUser(Request $request): JsonResponse
+    {
+        $commands = ServiceCommand::with(['server', 'user'])
+            ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->search, fn ($q) => $q->where(function ($sub) use ($request) {
+                $sub->where('service_name', 'like', "%{$request->search}%")
+                    ->orWhereHas('server', fn ($s) => $s->where('name', 'like', "%{$request->search}%"));
+            }))
+            ->latest('requested_at')
+            ->paginate(20);
+
+        $counts = ServiceCommand::query()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+
+        return response()->json([
+            'commands' => $commands,
+            'counts' => $counts,
+        ]);
+    }
+
+    /**
      * GET /api/agent/commands/poll
      * Agent polls for the next pending command (atomic pickup).
      */
