@@ -48,9 +48,17 @@
                             </td>
                             <td class="px-6 py-3.5 text-ink-soft" style="font-family: var(--font-mono);">{{ $server->private_ip ?? $server->public_ip ?? '—' }}</td>
                             <td class="px-6 py-3.5">
-                                @php $st = $server->agent->status ?? 'inactive'; @endphp
-                                <span class="inline-flex items-center gap-1.5 border-2 border-ink px-2.5 py-0.5 text-xs font-bold uppercase
-                                    {{ $st === 'online' ? 'bg-ok text-white' : ($st === 'revoked' ? 'bg-danger text-white' : 'bg-neutral text-white') }}">
+                                @php
+                                    // Jika belum pernah ada agent atau belum pernah heartbeat → waiting connection
+                                    if (!$server->agent || !$server->agent->last_heartbeat_at) {
+                                        $st = 'waiting connection';
+                                        $color = 'bg-neutral text-white';
+                                    } else {
+                                        $st = $server->agent->status;
+                                        $color = $st === 'online' ? 'bg-ok text-white' : ($st === 'revoked' ? 'bg-danger text-white' : 'bg-neutral text-white');
+                                    }
+                                @endphp
+                                <span class="inline-flex items-center gap-1.5 border-2 border-ink px-2.5 py-0.5 text-xs font-bold uppercase {{ $color }}">
                                     <span class="h-1.5 w-1.5 rounded-full bg-white"></span>
                                     {{ $st }}
                                 </span>

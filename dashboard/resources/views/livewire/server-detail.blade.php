@@ -5,9 +5,17 @@
             <a href="{{ route('servers.index') }}" class="text-xs font-bold uppercase tracking-wide text-ink-soft hover:text-accent">&larr; Kembali ke daftar</a>
             <h2 class="mt-1 text-2xl swiss-display text-ink">{{ $server->name }}</h2>
         </div>
-        @php $st = $server->agent->status ?? 'inactive'; @endphp
-        <span class="inline-flex w-fit items-center gap-1.5 border-2 border-ink px-3 py-1 text-xs font-bold uppercase
-            {{ $st === 'online' ? 'bg-ok text-white' : ($st === 'revoked' ? 'bg-danger text-white' : 'bg-neutral text-white') }}">
+        @php
+            // Jika belum pernah ada agent atau belum pernah heartbeat → waiting connection
+            if (!$server->agent || !$server->agent->last_heartbeat_at) {
+                $st = 'waiting connection';
+                $color = 'bg-neutral text-white';
+            } else {
+                $st = $server->agent->status;
+                $color = $st === 'online' ? 'bg-ok text-white' : ($st === 'revoked' ? 'bg-danger text-white' : 'bg-neutral text-white');
+            }
+        @endphp
+        <span class="inline-flex w-fit items-center gap-1.5 border-2 border-ink px-3 py-1 text-xs font-bold uppercase {{ $color }}">
             <span class="h-1.5 w-1.5 rounded-full bg-white"></span>
             {{ $st }}
         </span>
@@ -178,4 +186,113 @@
             </div>
         @endif
     </div>
+
+    {{-- Chart.js for metrics timeline --}}
+    @if ($tab === 'metrics')
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script>
+            (function() {
+                const canvas = document.getElementById('metrics-chart');
+                if (!canvas || window.metricsChart) return; // Prevent duplicate init on Livewire updates
+
+                const history = JSON.parse(canvas.dataset.history || '[]');
+                if (!history.length) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = '14px Space Grotesk, sans-serif';
+                    ctx.fillStyle = '#6b7280';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Belum ada data metrics', canvas.width / 2, canvas.height / 2);
+                    return;
+                }
+
+                const labels = history.map(m => new Date(m.collected_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}));
+                const cpu = history.map(m => m.cpu_percent);
+                const ram = history.map(m => m.ram_total_mb ? (m.ram_used_mb / m.ram_total_mb * 100).toFixed(1) : 0);
+                const disk = history.map(m => m.disk_total_gb ? (m.disk_used_gb / m.disk_total_gb * 100).toFixed(1) : 0);
+
+                window.metricsChart = new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'CPU %',
+                                data: cpu,
+                                borderColor: '#22c55e',
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            },
+                            {
+                                label: 'RAM %',
+                                data: ram,
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            },
+                            {
+                                label: 'Disk %',
+                                data: disk,
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: {family: 'Space Grotesk', size: 12},
+                                    usePointStyle: true,
+                                    padding: 15
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + parseFloat(context.parsed.y).toFixed(1) + '%';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) { return value + '%'; },
+                                    font: {family: 'Space Mono', size: 11}
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 0,
+                                    autoSkipPadding: 20,
+                                    font: {family: 'Space Mono', size: 10}
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Update chart on Livewire wire:poll refresh
+                document.addEventListener('livewire:update', function() {
+                    if (window.metricsChart) {
+                        window.metricsChart.destroy();
+                        window.metricsChart = null;
+                    }
+                });
+            })();
+        </script>
+    @endif
 </div>
