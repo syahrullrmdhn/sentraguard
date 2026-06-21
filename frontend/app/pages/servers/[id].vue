@@ -3,7 +3,7 @@ const route = useRoute()
 const api = useApi()
 const id = route.params.id as string
 
-const tab = ref<'overview' | 'metrics' | 'services' | 'commands'>('overview')
+const tab = ref<'overview' | 'metrics' | 'services' | 'firewall' | 'commands'>('overview')
 
 // Server detail
 const { data: detail, pending, refresh } = await useAsyncData(`server-${id}`, () =>
@@ -14,6 +14,7 @@ const server = computed(() => detail.value?.server)
 // Lazy-loaded per tab
 const metrics = ref<any>(null)
 const servicesData = ref<any>(null)
+const firewallRules = ref<any[]>([])
 const commands = ref<any[]>([])
 
 // Metrics: range selector
@@ -56,9 +57,15 @@ const loadCommands = async () => {
   commands.value = r.commands
 }
 
+const loadFirewall = async () => {
+  const r = await api.get<any>(`/api/servers/${id}/firewall`)
+  firewallRules.value = r.rules
+}
+
 watch(tab, (t) => {
   if (t === 'metrics' && !metrics.value) loadMetrics()
   if (t === 'services' && !servicesData.value) loadServices()
+  if (t === 'firewall' && !firewallRules.value.length) loadFirewall()
   if (t === 'commands' && !commands.value.length) loadCommands()
 })
 
@@ -269,6 +276,32 @@ const runAction = async (svc: any, action: string) => {
   }
 }
 
+// ---- Firewall actions ----
+const showAddRule = ref(false)
+const newRule = ref({ rule_name: '', direction: 'inbound', protocol: 'tcp', port: '', action: 'allow', description: '' })
+
+const toggleFirewallRule = async (rule: any) => {
+  await api.patch(`/api/servers/${id}/firewall/${rule.id}/toggle`)
+  await loadFirewall()
+}
+
+const deleteFirewallRule = async (rule: any) => {
+  if (!confirm(`Hapus rule "${rule.rule_name}"?`)) return
+  await api.delete(`/api/servers/${id}/firewall/${rule.id}`)
+  await loadFirewall()
+}
+
+const createFirewallRule = async () => {
+  try {
+    await api.post(`/api/servers/${id}/firewall`, newRule.value)
+    showAddRule.value = false
+    newRule.value = { rule_name: '', direction: 'inbound', protocol: 'tcp', port: '', action: 'allow', description: '' }
+    await loadFirewall()
+  } catch (e: any) {
+    alert(e?.data?.message || 'Gagal buat rule.')
+  }
+}
+
 const pct = (used: number, total: number) => (total ? Math.min(Math.round((used / total) * 1000) / 10, 100) : 0)
 const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' : 'bg-ok')
 </script>
@@ -290,7 +323,7 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
 
     <!-- Tabs -->
     <div class="mt-6 flex flex-wrap gap-2">
-      <button v-for="(label, key) in { overview: 'Overview', metrics: 'Metrics', services: 'Services', commands: 'Command History' }" :key="key"
+      <button v-for="(label, key) in { overview: 'Overview', metrics: 'Metrics', services: 'Services', firewall: 'Firewall', commands: 'Command History' }" :key="key"
         @click="tab = key as any"
         class="border-2 border-ink px-4 py-2 text-xs font-bold uppercase tracking-wide transition"
         :class="tab === key ? 'bg-accent-2 text-ink brutal-sm brutal-press' : 'bg-white text-ink-soft hover:bg-paper'">
@@ -449,6 +482,59 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
         </div>
       </div>
 
+      <!-- FIREWALL -->
+      <div v-else-if="tab === 'firewall'">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-sm font-bold uppercase text-ink-soft">Firewall Rules</h3>
+          <button @click="showAddRule = true" class="border-2 border-ink bg-accent-2 px-3 py-1.5 text-xs font-bold uppercase text-ink brutal-sm hover:opacity-80">
+            + Tambah Rule
+          </button>
+        </div>
+
+        <div v-if="!firewallRules.length" class="text-sm text-ink-soft">Belum ada firewall rule.</div>
+        <div v-else class="brutal-lg bg-white overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b-2 border-ink text-left swiss-label">
+                <th class="px-5 py-3">Rule Name</th>
+                <th class="px-5 py-3">Direction</th>
+                <th class="px-5 py-3">Protocol</th>
+                <th class="px-5 py-3">Port</th>
+                <th class="px-5 py-3">Action</th>
+                <th class="px-5 py-3">Status</th>
+                <th class="px-5 py-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-ink/10">
+              <tr v-for="rule in firewallRules" :key="rule.id" class="hover:bg-paper">
+                <td class="px-5 py-3">
+                  <p class="font-bold text-ink">{{ rule.rule_name }}</p>
+                  <p v-if="rule.description" class="text-xs text-ink-soft">{{ rule.description }}</p>
+                </td>
+                <td class="px-5 py-3 text-xs uppercase">{{ rule.direction }}</td>
+                <td class="px-5 py-3 text-xs uppercase">{{ rule.protocol }}</td>
+                <td class="px-5 py-3 text-xs font-mono">{{ rule.port || 'any' }}</td>
+                <td class="px-5 py-3">
+                  <span class="inline-flex border-2 border-ink px-2 py-0.5 text-xs font-bold uppercase" :class="rule.action === 'allow' ? 'bg-ok text-white' : 'bg-danger text-white'">
+                    {{ rule.action }}
+                  </span>
+                </td>
+                <td class="px-5 py-3">
+                  <button @click="toggleFirewallRule(rule)" class="border-2 border-ink px-2 py-0.5 text-xs font-bold uppercase transition hover:opacity-80" :class="rule.is_enabled ? 'bg-ok text-white' : 'bg-neutral text-white'">
+                    {{ rule.is_enabled ? 'Enabled' : 'Disabled' }}
+                  </button>
+                </td>
+                <td class="px-5 py-3 text-right">
+                  <button @click="deleteFirewallRule(rule)" class="border-2 border-ink bg-white px-2 py-0.5 text-xs font-bold uppercase text-danger hover:bg-danger hover:text-white transition">
+                    Hapus
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- COMMANDS -->
       <div v-else-if="tab === 'commands'">
         <div v-if="!commands.length" class="text-sm text-ink-soft">Belum ada command.</div>
@@ -505,6 +591,62 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
           </div>
           <div class="border-t-2 border-ink bg-paper px-5 py-3 flex justify-end">
             <button @click="showUpdate = false" class="border-2 border-ink bg-white px-4 py-2 text-sm font-bold uppercase brutal-sm brutal-press">Tutup</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tambah Rule modal -->
+      <div v-if="showAddRule" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
+        <div class="animate-slide-up w-full max-w-xl border-2 border-ink bg-white shadow-brutal-lg">
+          <div class="flex items-center justify-between border-b-2 border-ink bg-accent-2 px-5 py-3">
+            <h3 class="text-sm font-bold uppercase tracking-wide text-ink">Tambah Firewall Rule</h3>
+            <button @click="showAddRule = false" class="text-2xl leading-none text-ink hover:text-danger">&times;</button>
+          </div>
+          <div class="p-5">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold uppercase text-ink-soft mb-1">Rule Name *</label>
+                <input v-model="newRule.rule_name" type="text" placeholder="e.g., Allow HTTP" class="w-full border-2 border-ink bg-white px-3 py-2 text-sm text-ink brutal-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-ink-soft mb-1">Direction *</label>
+                  <select v-model="newRule.direction" class="w-full border-2 border-ink bg-white px-3 py-2 text-sm text-ink brutal-sm focus:outline-none focus:ring-2 focus:ring-accent">
+                    <option value="inbound">Inbound</option>
+                    <option value="outbound">Outbound</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-ink-soft mb-1">Protocol *</label>
+                  <select v-model="newRule.protocol" class="w-full border-2 border-ink bg-white px-3 py-2 text-sm text-ink brutal-sm focus:outline-none focus:ring-2 focus:ring-accent">
+                    <option value="tcp">TCP</option>
+                    <option value="udp">UDP</option>
+                    <option value="any">Any</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-ink-soft mb-1">Port</label>
+                  <input v-model="newRule.port" type="text" placeholder="e.g., 80, 443, 3000-3010" class="w-full border-2 border-ink bg-white px-3 py-2 text-sm text-ink brutal-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-ink-soft mb-1">Action *</label>
+                  <select v-model="newRule.action" class="w-full border-2 border-ink bg-white px-3 py-2 text-sm text-ink brutal-sm focus:outline-none focus:ring-2 focus:ring-accent">
+                    <option value="allow">Allow</option>
+                    <option value="block">Block</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-ink-soft mb-1">Description</label>
+                <textarea v-model="newRule.description" rows="2" placeholder="Optional description..." class="w-full border-2 border-ink bg-white px-3 py-2 text-sm text-ink brutal-sm focus:outline-none focus:ring-2 focus:ring-accent"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="border-t-2 border-ink bg-paper px-5 py-3 flex justify-end gap-2">
+            <button @click="showAddRule = false" class="border-2 border-ink bg-white px-4 py-2 text-sm font-bold uppercase brutal-sm hover:bg-paper">Batal</button>
+            <button @click="createFirewallRule" class="border-2 border-ink bg-accent-2 px-4 py-2 text-sm font-bold uppercase text-ink brutal-sm brutal-press hover:bg-accent hover:text-white">Buat Rule</button>
           </div>
         </div>
       </div>

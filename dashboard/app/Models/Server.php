@@ -73,6 +73,14 @@ class Server extends Model
     }
 
     /**
+     * Get all firewall rules for this server
+     */
+    public function firewallRules(): HasMany
+    {
+        return $this->hasMany(FirewallRule::class);
+    }
+
+    /**
      * Check if server is online
      */
     public function isOnline(): bool

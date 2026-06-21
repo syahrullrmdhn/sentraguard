@@ -71,6 +71,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('servers/{server}/update-agent', [ServerApiController::class, 'updateAgent']);
     Route::post('servers/{server}/services/{service}/toggle-allow', [ServerApiController::class, 'toggleAllow']);
     Route::post('servers/{server}/services/{service}/action', [ServerApiController::class, 'serviceAction']);
+    
+    // Firewall rules
+    Route::get('servers/{server}/firewall', [ServerApiController::class, 'firewallRules']);
+    Route::post('servers/{server}/firewall', [ServerApiController::class, 'createFirewallRule']);
+    Route::patch('servers/{server}/firewall/{rule}/toggle', [ServerApiController::class, 'toggleFirewallRule']);
+    Route::delete('servers/{server}/firewall/{rule}', [ServerApiController::class, 'deleteFirewallRule']);
 
     // Commands queue (global)
     Route::get('commands', [CommandController::class, 'indexForUser']);

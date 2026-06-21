@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Server;
 use App\Models\ServerService;
+use App\Models\FirewallRule;
 use App\Services\AgentTokenService;
 use App\Services\AuditService;
 use App\Services\CommandService;
@@ -269,6 +270,83 @@ class ServerApiController extends Controller
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+    }
+
+    /**
+     * GET /api/servers/{server}/firewall — list firewall rules
+     */
+    public function firewallRules(Server $server): JsonResponse
+    {
+        $rules = $server->firewallRules()->orderBy('rule_name')->get();
+        return response()->json(['rules' => $rules]);
+    }
+
+    /**
+     * POST /api/servers/{server}/firewall — create new firewall rule
+     */
+    public function createFirewallRule(Request $request, Server $server, AuditService $audit): JsonResponse
+    {
+        $data = $request->validate([
+            'rule_name' => ['required', 'string', 'max:255'],
+            'direction' => ['required', 'in:inbound,outbound'],
+            'protocol' => ['required', 'in:tcp,udp,any'],
+            'port' => ['nullable', 'string', 'max:50'],
+            'action' => ['required', 'in:allow,block'],
+            'description' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $rule = $server->firewallRules()->create($data);
+
+        $audit->userAction(
+            action: 'firewall.rule_created',
+            resourceType: 'firewall_rule',
+            resourceId: (string) $rule->id,
+            description: "Created firewall rule {$rule->rule_name}",
+            serverId: $server->id,
+        );
+
+        return response()->json(['rule' => $rule], 201);
+    }
+
+    /**
+     * PATCH /api/servers/{server}/firewall/{rule}/toggle — toggle rule enabled
+     */
+    public function toggleFirewallRule(Server $server, FirewallRule $rule, AuditService $audit): JsonResponse
+    {
+        abort_unless($rule->server_id === $server->id, 404);
+
+        $rule->update(['is_enabled' => !$rule->is_enabled]);
+
+        $audit->userAction(
+            action: 'firewall.rule_toggled',
+            resourceType: 'firewall_rule',
+            resourceId: (string) $rule->id,
+            description: ($rule->is_enabled ? 'Enabled' : 'Disabled') . " firewall rule {$rule->rule_name}",
+            serverId: $server->id,
+        );
+
+        return response()->json(['rule' => $rule->fresh()]);
+    }
+
+    /**
+     * DELETE /api/servers/{server}/firewall/{rule} — delete rule
+     */
+    public function deleteFirewallRule(Server $server, FirewallRule $rule, AuditService $audit): JsonResponse
+    {
+        abort_unless($rule->server_id === $server->id, 404);
+
+        $ruleName = $rule->rule_name;
+        $rule->delete();
+
+        $audit->userAction(
+            action: 'firewall.rule_deleted',
+            resourceType: 'firewall_rule',
+            resourceId: (string) $rule->id,
+            description: "Deleted firewall rule {$ruleName}",
+            serverId: $server->id,
+        );
+
+        return response()->json(['message' => 'Rule deleted']);
     }
 
     /**
