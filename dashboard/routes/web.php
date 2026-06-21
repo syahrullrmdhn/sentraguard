@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
         return view('servers.show', ['server' => $server]);
     })->name('servers.show');
     Route::view('/commands', 'commands.index')->name('commands.index');
+    Route::view('/users', 'users.index')->name('users.index');
     Route::view('/audit', 'audit.index')->name('audit.index');
 });
 
