@@ -12,6 +12,7 @@ class ServerDetail extends Component
 {
     public Server $server;
     public string $tab = 'overview';
+    public string $updateScript = '';
 
     public array $history = [];
 
@@ -19,6 +20,7 @@ class ServerDetail extends Component
     {
         $this->server = $server;
         $this->loadMetrics();
+        $this->generateUpdateScript();
     }
 
     public function setTab(string $tab): void
@@ -96,6 +98,56 @@ class ServerDetail extends Component
         } catch (\Exception $e) {
             session()->flash('cmd_err', 'Gagal queue update: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Generate PowerShell script untuk install agent versi terbaru.
+     * Script ini auto-include token dari server saat ini.
+     */
+    protected function generateUpdateScript(): void
+    {
+        $latestVersion = config('agent.latest_version', '1.0.6');
+        $downloadUrl = config('agent.download_url', url('/download/agent'));
+        $serverUrl = config('app.url');
+        $token = $this->server->agent?->token ?? 'TOKEN_NOT_FOUND';
+
+        $this->updateScript = <<<POWERSHELL
+# ========================================
+# SentraGuard Agent v{$latestVersion} Update Script
+# Server: {$this->server->name}
+# Generated: {{ now()->format('Y-m-d H:i:s') }}
+# ========================================
+
+Write-Host "`n🛑 Step 1: Stop & uninstall agent lama..." -ForegroundColor Yellow
+& "\$env:TEMP\sentraguard-agent.exe" stop 2>\$null
+Start-Sleep -Seconds 3
+& "\$env:TEMP\sentraguard-agent.exe" uninstall 2>\$null
+
+Write-Host "`n🧹 Step 2: Clean up old files..." -ForegroundColor Yellow
+Remove-Item "C:\ProgramData\SentraGuard Agent" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "\$env:TEMP\sentraguard-agent.exe" -ErrorAction SilentlyContinue
+
+Write-Host "`n📥 Step 3: Download v{$latestVersion}..." -ForegroundColor Yellow
+Invoke-RestMethod "{$downloadUrl}?v=\$(Get-Random)" -OutFile \$env:TEMP\sentraguard-agent.exe
+
+Write-Host "`n✅ Step 4: Verify version..." -ForegroundColor Yellow
+& "\$env:TEMP\sentraguard-agent.exe" version
+
+Write-Host "`n🚀 Step 5: Installing with saved token..." -ForegroundColor Yellow
+& "\$env:TEMP\sentraguard-agent.exe" install --server {$serverUrl} --token {$token}
+
+Write-Host "`n⏳ Step 6: Wait for agent startup (30s)..." -ForegroundColor Yellow
+Start-Sleep -Seconds 30
+
+Write-Host "`n📊 Step 7: Check log..." -ForegroundColor Yellow
+Get-Content "C:\ProgramData\SentraGuard Agent\logs\agent.log" -Tail 15
+
+Write-Host "`n✅ SELESAI! Refresh dashboard untuk verify:" -ForegroundColor Green
+Write-Host "   - Agent Version: {$latestVersion}" -ForegroundColor White
+Write-Host "   - Metrics & Services: aktif" -ForegroundColor White
+Write-Host "   - Public IP: terdeteksi" -ForegroundColor White
+Write-Host "`n🔄 Update berikutnya bisa langsung dari dashboard (nggak perlu token lagi)." -ForegroundColor Cyan
+POWERSHELL;
     }
 
     public function render()

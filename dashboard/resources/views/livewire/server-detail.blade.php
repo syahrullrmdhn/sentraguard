@@ -88,26 +88,73 @@
                                 </p>
                             </div>
                             <div class="mt-4 border-l-4 border-ink-soft bg-paper pl-3 py-2 text-xs text-ink-soft">
-                                <p><strong>Proses update:</strong></p>
+                                <p><strong>Untuk update pertama kali dari v{{ $currentVersion }}:</strong></p>
                                 <ul class="mt-1 space-y-0.5 list-disc list-inside">
-                                    <li>Download binary terbaru (~7MB)</li>
-                                    <li>Stop service → backup → replace file</li>
-                                    <li>Restart service otomatis</li>
-                                    <li>Durasi total: ~60 detik</li>
+                                    <li>Copy script PowerShell di bawah</li>
+                                    <li>Jalanin di Windows sebagai Administrator</li>
+                                    <li>Script akan download + install v{{ $latestVersion }}</li>
+                                    <li>Update berikutnya bisa dari dashboard (nggak perlu token lagi)</li>
                                 </ul>
                             </div>
                         </div>
                         <div class="flex flex-col gap-2 sm:shrink-0">
-                            <button wire:click="updateAgent" 
-                                    wire:loading.attr="disabled"
-                                    class="border-2 border-ink bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-accent-2 hover:shadow-brutal-sm disabled:opacity-50 disabled:cursor-not-allowed brutal">
-                                <span wire:loading.remove wire:target="updateAgent">Update Sekarang</span>
-                                <span wire:loading wire:target="updateAgent">⏳ Queueing...</span>
+                            <button onclick="document.getElementById('update-script-modal-{{ $server->id }}').classList.remove('hidden')"
+                                    class="border-2 border-ink bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-accent-2 hover:shadow-brutal-sm brutal">
+                                📋 Copy Script Install
                             </button>
-                            <p class="text-center text-xs text-ink-soft">Server tetap online</p>
+                            <p class="text-center text-xs text-ink-soft">PowerShell script lengkap</p>
                         </div>
                     </div>
                 </div>
+
+                {{-- Update Script Modal --}}
+                <div id="update-script-modal-{{ $server->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+                    <div class="animate-slide-up w-full max-w-3xl border-2 border-ink bg-white shadow-brutal-lg" style="animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                        <div class="border-b-2 border-ink bg-accent px-6 py-4 flex items-center justify-between">
+                            <h3 class="text-base font-bold uppercase tracking-wide text-ink">📋 Script Install Agent v{{ $latestVersion }}</h3>
+                            <button onclick="document.getElementById('update-script-modal-{{ $server->id }}').classList.add('hidden')" 
+                                    class="text-2xl leading-none text-ink hover:text-danger">&times;</button>
+                        </div>
+                        <div class="p-6 max-h-[70vh] overflow-y-auto">
+                            <div class="mb-4 border-l-4 border-accent bg-accent/10 pl-3 py-2 text-sm text-ink">
+                                <p><strong>Cara pakai:</strong></p>
+                                <ol class="mt-1 space-y-0.5 list-decimal list-inside">
+                                    <li>Klik tombol "Copy Script" di bawah</li>
+                                    <li>Buka <strong>PowerShell as Administrator</strong> di Windows server</li>
+                                    <li>Paste script (Ctrl+V atau klik kanan)</li>
+                                    <li>Tekan Enter → script jalan otomatis</li>
+                                    <li>Tunggu ~60 detik → agent restart dengan v{{ $latestVersion }}</li>
+                                </ol>
+                            </div>
+                            <div class="relative">
+                                <pre id="update-script-content-{{ $server->id }}" class="bg-ink text-paper p-4 text-xs font-mono overflow-x-auto border-2 border-ink" style="max-height: 400px;">{{ $updateScript ?? 'Loading...' }}</pre>
+                                <button onclick="copyUpdateScript({{ $server->id }})" 
+                                        class="absolute top-2 right-2 border-2 border-paper bg-accent px-3 py-1.5 text-xs font-bold uppercase text-ink hover:bg-accent-2 brutal">
+                                    <span id="copy-btn-text-{{ $server->id }}">Copy Script</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="border-t-2 border-ink bg-paper px-6 py-4 flex justify-end gap-2">
+                            <button onclick="document.getElementById('update-script-modal-{{ $server->id }}').classList.add('hidden')" 
+                                    class="border-2 border-ink bg-white px-4 py-2 text-sm font-bold uppercase text-ink hover:bg-paper brutal">
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                @push('scripts')
+                <script>
+                function copyUpdateScript(serverId) {
+                    const content = document.getElementById('update-script-content-' + serverId).textContent;
+                    navigator.clipboard.writeText(content).then(() => {
+                        const btn = document.getElementById('copy-btn-text-' + serverId);
+                        btn.textContent = '✅ Copied!';
+                        setTimeout(() => btn.textContent = 'Copy Script', 2000);
+                    });
+                }
+                </script>
+                @endpush
             @endif
         @endif
 
