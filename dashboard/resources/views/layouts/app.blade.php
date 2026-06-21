@@ -10,17 +10,17 @@
 </head>
 <body class="h-full">
 <div class="min-h-full lg:flex">
-    {{-- Sidebar (Glassmorphism over dark ink) --}}
-    <aside class="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 glass-dark text-white z-20">
-        <div class="flex items-center gap-3 h-16 px-6 border-b border-white/10">
-            <div class="flex h-10 w-10 items-center justify-center bg-accent-2 text-ink brutal" style="box-shadow: 3px 3px 0 0 rgba(255,255,255,0.25);">
+    {{-- Sidebar (Light clean background) --}}
+    <aside class="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 glass-dark z-20">
+        <div class="flex items-center gap-3 h-16 px-6 border-b border-ink/10">
+            <div class="flex h-10 w-10 items-center justify-center bg-accent-2 text-ink brutal" style="box-shadow: 3px 3px 0 0 rgba(0,0,0,0.15);">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
                 </svg>
             </div>
             <div>
-                <span class="block text-base font-bold tracking-tight leading-none">SENTRAGUARD</span>
-                <span class="swiss-label text-white/50" style="color: rgba(255,255,255,0.5);">AgentOps Console</span>
+                <span class="block text-base font-bold tracking-tight leading-none text-ink">SENTRAGUARD</span>
+                <span class="swiss-label text-ink-soft">AgentOps Console</span>
             </div>
         </div>
         <nav class="flex-1 px-3 py-5 space-y-2 overflow-y-auto">
@@ -38,7 +38,7 @@
                    class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition
                           {{ $active
                                 ? 'bg-accent-2 text-ink brutal brutal-press'
-                                : 'text-white/70 hover:text-white hover:bg-white/5 border-2 border-transparent' }}">
+                                : 'text-ink-soft hover:text-ink hover:bg-paper border-2 border-transparent' }}">
                     <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.7" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="{{ $item['icon'] }}" />
                     </svg>
@@ -46,14 +46,14 @@
                 </a>
             @endforeach
         </nav>
-        <div class="border-t border-white/10 p-4">
+        <div class="border-t border-ink/10 p-4">
             <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center bg-accent text-white brutal text-sm font-bold" style="box-shadow: 3px 3px 0 0 rgba(255,255,255,0.2);">
+                <div class="flex h-10 w-10 items-center justify-center bg-accent text-white brutal text-sm font-bold" style="box-shadow: 3px 3px 0 0 rgba(0,0,0,0.15);">
                     {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
                 </div>
                 <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-semibold text-white">{{ auth()->user()->name ?? 'User' }}</p>
-                    <p class="truncate swiss-label" style="color: rgba(255,255,255,0.5);">{{ auth()->user()->role->display_name ?? '—' }}</p>
+                    <p class="truncate text-sm font-semibold text-ink">{{ auth()->user()->name ?? 'User' }}</p>
+                    <p class="truncate swiss-label text-ink-soft">{{ auth()->user()->role->display_name ?? '—' }}</p>
                 </div>
             </div>
         </div>
