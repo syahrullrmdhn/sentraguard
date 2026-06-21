@@ -17,6 +17,9 @@ const servicesData = ref<any>(null)
 const firewallRules = ref<any[]>([])
 const commands = ref<any[]>([])
 
+// Update agent
+const updateLoading = ref(false)
+
 // Metrics: range selector
 const metricsRange = ref('1h')
 const rangeOptions = [
@@ -262,6 +265,21 @@ const copyScript = () => {
   setTimeout(() => (copyLabel.value = 'Copy Script'), 2000)
 }
 
+const triggerUpdate = async () => {
+  if (!confirm('Update agent sekarang? Agent akan restart otomatis dalam ~60 detik.')) return
+  
+  updateLoading.value = true
+  try {
+    await api.post(`/api/servers/${id}/update-agent`)
+    alert('Update command berhasil di-queue! Cek tab Commands untuk status.')
+    await loadCommands()
+  } catch (e: any) {
+    alert(e?.data?.message || 'Gagal queue update.')
+  } finally {
+    updateLoading.value = false
+  }
+}
+
 // ---- Service actions ----
 const toggleAllow = async (svc: any) => {
   await api.post(`/api/servers/${id}/services/${svc.id}/toggle-allow`)
@@ -351,11 +369,16 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
                 <span class="mx-1">→</span>
                 <span class="border-2 border-accent bg-accent px-2 py-0.5 text-xs font-mono font-bold text-white">v{{ server.latest_version }}</span>
               </p>
-              <p class="mt-3 text-xs text-ink-soft">Copy script PowerShell, jalanin di Windows sebagai Administrator. Update berikutnya bisa langsung dari dashboard.</p>
+              <p class="mt-3 text-xs text-ink-soft">Klik "Update Now" untuk auto-update langsung (agent akan restart otomatis ~60 detik). Atau "Copy Script" untuk manual install.</p>
             </div>
-            <button @click="openUpdate" class="shrink-0 border-2 border-ink bg-accent-2 px-6 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-accent hover:text-white brutal brutal-press">
-              Copy Script Install
-            </button>
+            <div class="flex shrink-0 gap-2">
+              <button @click="triggerUpdate" :disabled="updateLoading" class="border-2 border-ink bg-ok px-6 py-3 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-ok/80 brutal brutal-press disabled:opacity-50 disabled:cursor-not-allowed">
+                {{ updateLoading ? 'Updating...' : 'Update Now' }}
+              </button>
+              <button @click="openUpdate" class="border-2 border-ink bg-white px-6 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-paper brutal">
+                Copy Script
+              </button>
+            </div>
           </div>
         </div>
       </div>

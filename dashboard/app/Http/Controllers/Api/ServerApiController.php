@@ -211,7 +211,7 @@ class ServerApiController extends Controller
         try {
             $commands->queueRaw(
                 server: $server,
-                command: 'update',
+                action: 'update',
                 userId: $request->user()->id,
             );
 
