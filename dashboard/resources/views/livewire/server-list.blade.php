@@ -89,10 +89,12 @@
 
     <div class="mt-4">{{ $servers->links() }}</div>
 
-    {{-- Create modal: glass backdrop + brutalist card --}}
+    {{-- Create modal: animated glass backdrop + brutalist card --}}
     @if ($showCreate)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(17,17,17,0.45); backdrop-filter: blur(6px);" wire:click.self="$set('showCreate', false)">
-            <div class="w-full max-w-md bg-white p-6 brutal-lg">
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" 
+             style="background: rgba(17,17,17,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);" 
+             wire:click.self="$set('showCreate', false)">
+            <div class="w-full max-w-md bg-white p-6 brutal-lg animate-slide-up" wire:click.stop>
                 @if ($generatedToken)
                     <div class="flex items-center gap-2">
                         <span class="flex h-8 w-8 items-center justify-center bg-ok text-white brutal text-sm font-bold">✓</span>

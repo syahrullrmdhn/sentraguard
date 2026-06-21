@@ -84,8 +84,10 @@
 
     {{-- Modal Create/Edit --}}
     @if ($showModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4" wire:click.self="$set('showModal', false)">
-            <div class="w-full max-w-md bg-white brutal-lg p-6" wire:click.stop>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" 
+             style="background: rgba(17,17,17,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);" 
+             wire:click.self="$set('showModal', false)">
+            <div class="w-full max-w-md bg-white brutal-lg p-6 animate-slide-up" wire:click.stop>
                 <div class="flex items-center justify-between border-b-2 border-ink pb-3">
                     <h3 class="text-lg font-bold uppercase tracking-wide text-ink">{{ $editMode ? 'Edit User' : 'Tambah User' }}</h3>
                     <button wire:click="$set('showModal', false)" class="text-ink-soft hover:text-ink">
