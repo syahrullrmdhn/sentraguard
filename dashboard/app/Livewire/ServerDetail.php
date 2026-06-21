@@ -16,11 +16,11 @@ class ServerDetail extends Component
 
     public array $history = [];
 
-    public function mount(Server $server): void
+    public function mount(Server $server, \App\Services\AgentTokenService $tokens): void
     {
         $this->server = $server;
         $this->loadMetrics();
-        $this->generateUpdateScript();
+        $this->generateUpdateScript($tokens);
     }
 
     public function setTab(string $tab): void
@@ -102,23 +102,24 @@ class ServerDetail extends Component
 
     /**
      * Generate PowerShell script untuk install agent versi terbaru.
-     * Karena token plaintext nggak disimpan (cuma hash), kita generate token baru.
+     * Karena token plaintext nggak disimpan (cuma hash), kita generate token registrasi baru
+     * via AgentTokenService (hash + token_used=false). Token valid one-time sampai agent register.
      */
-    protected function generateUpdateScript(): void
+    protected function generateUpdateScript(\App\Services\AgentTokenService $tokens): void
     {
         $latestVersion = config('agent.latest_version', '1.0.6');
         $downloadUrl = config('agent.download_url', url('/download/agent'));
         $serverUrl = config('app.url');
-        
-        // Generate token baru untuk update (token lama udah di-hash, nggak bisa diambil lagi)
-        $token = 'AGT_' . bin2hex(random_bytes(20));
-        $this->server->update(['registration_token' => $token]);
+
+        // Generate token registrasi baru yang valid (di-hash & disimpan dengan benar).
+        $token = $tokens->generateRegistrationToken($this->server);
+        $generatedAt = now()->format('Y-m-d H:i:s');
 
         $this->updateScript = <<<POWERSHELL
 # ========================================
 # SentraGuard Agent v{$latestVersion} Update Script
 # Server: {$this->server->name}
-# Generated: {now()->format('Y-m-d H:i:s')}
+# Generated: {$generatedAt}
 # ========================================
 
 Write-Host "`n🛑 Step 1: Stop & uninstall agent lama..." -ForegroundColor Yellow
