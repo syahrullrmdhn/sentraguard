@@ -87,6 +87,8 @@ const chartData = computed(() => {
     const total = m.disk_total_gb || 1
     return Math.round((m.disk_used_gb / total) * 100)
   })
+  const netSentData = history.map((m: any) => m.network_sent_mbps ?? 0)
+  const netRecvData = history.map((m: any) => m.network_recv_mbps ?? 0)
   
   return {
     labels,
@@ -100,6 +102,7 @@ const chartData = computed(() => {
         pointRadius: 0,
         tension: 0.3,
         fill: true,
+        yAxisID: 'y',
       },
       {
         label: 'RAM %',
@@ -110,6 +113,7 @@ const chartData = computed(() => {
         pointRadius: 0,
         tension: 0.3,
         fill: true,
+        yAxisID: 'y',
       },
       {
         label: 'Disk %',
@@ -120,6 +124,29 @@ const chartData = computed(() => {
         pointRadius: 0,
         tension: 0.3,
         fill: true,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Network ↑ (Mbps)',
+        data: netSentData,
+        borderColor: '#00d4aa',
+        backgroundColor: 'rgba(0, 212, 170, 0.1)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.3,
+        fill: false,
+        yAxisID: 'y1',
+      },
+      {
+        label: 'Network ↓ (Mbps)',
+        data: netRecvData,
+        borderColor: '#ff9500',
+        backgroundColor: 'rgba(255, 149, 0, 0.1)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.3,
+        fill: false,
+        yAxisID: 'y1',
       },
     ],
   }
@@ -143,12 +170,34 @@ const chartOptions = {
       ticks: { font: { family: 'Space Mono', size: 10 } },
     },
     y: { 
+      type: 'linear' as const,
+      position: 'left' as const,
       min: 0, 
       max: 100,
       grid: { color: 'rgba(0,0,0,0.05)' },
       ticks: { 
         font: { family: 'Space Mono', size: 11 }, 
         callback: (v: any) => v + '%' 
+      },
+      title: {
+        display: true,
+        text: 'CPU / RAM / Disk (%)',
+        font: { family: 'Space Grotesk', size: 11, weight: '600' },
+      },
+    },
+    y1: {
+      type: 'linear' as const,
+      position: 'right' as const,
+      min: 0,
+      grid: { display: false },
+      ticks: { 
+        font: { family: 'Space Mono', size: 11 },
+        callback: (v: any) => v + ' Mbps',
+      },
+      title: {
+        display: true,
+        text: 'Network (Mbps)',
+        font: { family: 'Space Grotesk', size: 11, weight: '600' },
       },
     },
   },

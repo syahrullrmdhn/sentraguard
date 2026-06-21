@@ -61,6 +61,6 @@ return [
     |
     */
 
-    'latest_version' => env('AGENT_LATEST_VERSION', '1.0.6'),
+    'latest_version' => env('AGENT_LATEST_VERSION', '1.0.7'),
 
 ];

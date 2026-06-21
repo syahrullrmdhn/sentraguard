@@ -57,11 +57,13 @@ type HeartbeatRequest struct {
 }
 
 type MetricsRequest struct {
-	CPUPercent  float64 `json:"cpu_percent"`
-	RAMUsedMB   uint64  `json:"ram_used_mb"`
-	RAMTotalMB  uint64  `json:"ram_total_mb"`
-	DiskUsedGB  float64 `json:"disk_used_gb"`
-	DiskTotalGB float64 `json:"disk_total_gb"`
+	CPUPercent      float64 `json:"cpu_percent"`
+	RAMUsedMB       uint64  `json:"ram_used_mb"`
+	RAMTotalMB      uint64  `json:"ram_total_mb"`
+	DiskUsedGB      float64 `json:"disk_used_gb"`
+	DiskTotalGB     float64 `json:"disk_total_gb"`
+	NetworkSentMbps float64 `json:"network_sent_mbps"`
+	NetworkRecvMbps float64 `json:"network_recv_mbps"`
 }
 
 type ServiceInfo struct {

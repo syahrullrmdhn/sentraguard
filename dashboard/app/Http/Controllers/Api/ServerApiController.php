@@ -112,7 +112,7 @@ class ServerApiController extends Controller
         $history = $server->metrics()
             ->where('collected_at', '>=', $since)
             ->orderBy('collected_at')
-            ->get(['cpu_percent', 'ram_used_mb', 'ram_total_mb', 'disk_used_gb', 'disk_total_gb', 'collected_at']);
+            ->get(['cpu_percent', 'ram_used_mb', 'ram_total_mb', 'disk_used_gb', 'disk_total_gb', 'network_sent_mbps', 'network_recv_mbps', 'collected_at']);
 
         return response()->json([
             'history' => $history,
