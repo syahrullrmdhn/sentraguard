@@ -1,7 +1,7 @@
 # SentraGuard AgentOps — Setup Progress Report
 
-**Date:** 2026-06-20
-**Status:** Phases 1–5 COMPLETE ✅ — dashboard, agent API, UI, Go Windows agent, installer + docs all done and verified. Only blocker: production MySQL database creation (needs panel/root access).
+**Date:** 2026-06-21
+**Status:** Phases 1–6 COMPLETE ✅ — dashboard, agent API, UI, Go Windows agent, installer + docs, and Cloudflare Tunnel-style enrollment all done and verified. Only blocker: production MySQL database creation (needs panel/root access).
 
 ---
 
@@ -14,6 +14,7 @@
 | 3 | Dashboard UI (4-system design fusion, Livewire) | ✅ Done |
 | 4 | Go Windows agent (SCM, metrics, executor, DPAPI) | ✅ Done |
 | 5 | Inno Setup installer + deployment docs | ✅ Done |
+| 6 | Cloudflare Tunnel-style enrollment UX | ✅ Done |
 
 ---
 
@@ -51,6 +52,13 @@
   - Uninstaller stops/removes the service
 - `installer/inno-setup/README.md` — how to compile with ISCC
 - `docs/DEPLOYMENT.md` — full operator guide (dashboard install, DB, Redis isolation, agent onboarding, allowlist, config reference, troubleshooting, security checklist)
+
+## Phase 6 — Cloudflare Tunnel-style Enrollment ✅
+- Public download endpoint: `GET /download/agent` → serves Windows `.exe` (no auth, 6.8 MB)
+- UI: PowerShell one-liner in modal after server creation (copy button + visual feedback)
+- Command: `irm .../download/agent -OutFile $env:TEMP\agent.exe; & "$env:TEMP\agent.exe" install --server ... --token AGT_xxx`
+- Collapsible manual installation fallback
+- **Verified:** download 200 OK (PE header valid), UI modal shows command + SALIN button, token one-time display
 
 ---
 
