@@ -51,4 +51,16 @@ return [
     'metrics_retention_days' => env('METRICS_RETENTION_DAYS', 30),
     'audit_log_retention_days' => env('AUDIT_LOG_RETENTION_DAYS', 90),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Latest Agent Version
+    |--------------------------------------------------------------------------
+    |
+    | The latest stable agent version. Agents query /api/agent/version to
+    | check for updates. Bump this after rebuilding the agent binary.
+    |
+    */
+
+    'latest_version' => env('AGENT_LATEST_VERSION', '1.0.5'),
+
 ];

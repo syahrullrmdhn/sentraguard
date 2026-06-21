@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\CommandController;
 use App\Http\Controllers\Api\MetricsController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\VersionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('agent')->group(function () {
+    // Public: version check endpoint (no auth required)
+    Route::get('version', [VersionController::class, 'latest']);
+
     // Unauthenticated: one-time registration token in body.
     Route::post('register', [AgentController::class, 'register']);
 
