@@ -19,7 +19,12 @@ func NewStore() Store {
 }
 
 func (s *windowsStore) Save(token string) error {
-	encrypted, err := dpapi.Encrypt(token)
+	// MachineLocal scope is REQUIRED: install runs as the interactive admin user,
+	// but the Windows Service runs as LocalSystem. User-scope DPAPI (Encrypt) would
+	// encrypt under the admin's profile key and LocalSystem could never decrypt it,
+	// silently killing the service's worker goroutine. Machine scope lets any
+	// principal on this host decrypt.
+	encrypted, err := dpapi.EncryptMachineLocal(token)
 	if err != nil {
 		return fmt.Errorf("dpapi encrypt: %w", err)
 	}

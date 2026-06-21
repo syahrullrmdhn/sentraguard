@@ -69,10 +69,19 @@ func controlService(action string) error {
 	switch action {
 	case "uninstall":
 		_, _ = s.Control(svc.Stop)
+		time.Sleep(2 * time.Second)
 		if err := s.Delete(); err != nil {
 			return err
 		}
-		fmt.Println("✅ Service uninstalled.")
+		// Wipe the DPAPI-protected runtime token from Credential Manager.
+		if err := token.NewStore().Delete(); err != nil {
+			fmt.Printf("⚠️  service deleted, but token cleanup failed: %v\n", err)
+		}
+		// Remove config + logs directory so a fresh install starts clean.
+		if err := os.RemoveAll(config.DataDir()); err != nil {
+			fmt.Printf("⚠️  service deleted, but data dir cleanup failed: %v\n", err)
+		}
+		fmt.Println("✅ Service uninstalled, runtime token and config removed.")
 	case "start":
 		if err := s.Start(); err != nil {
 			return err
@@ -111,17 +120,23 @@ func (h *serviceHandler) Execute(args []string, r <-chan svc.ChangeRequest, chan
 	defer cancel()
 
 	go func() {
+		log := logging.New("info", config.LogDir())
 		cfg, err := config.Load("")
 		if err != nil {
+			log.Error("service worker: load config failed: %v", err)
+			changes <- svc.Status{State: svc.Stopped, Win32ExitCode: 1}
 			return
 		}
 		runtimeToken, err := token.NewStore().Load()
 		if err != nil {
+			log.Error("service worker: load runtime token failed (DPAPI scope mismatch?): %v", err)
+			changes <- svc.Status{State: svc.Stopped, Win32ExitCode: 1}
 			return
 		}
 		client := api.New(cfg.ServerURL)
 		client.SetRuntimeToken(runtimeToken)
-		log := logging.New(cfg.LogLevel, config.LogDir())
+		log = logging.New(cfg.LogLevel, config.LogDir())
+		log.Info("service worker started, entering run loops")
 		agent.New(cfg, client, log).Run(ctx)
 	}()
 
