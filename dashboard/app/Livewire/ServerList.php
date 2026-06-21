@@ -68,17 +68,21 @@ class ServerList extends Component
     public function delete($id, AuditService $audit): void
     {
         $server = Server::findOrFail($id);
+        $name = $server->name;
 
+        // Hard delete: the unique constraint on `name` counts soft-deleted rows,
+        // so a soft delete would block re-creating a server with the same name.
+        // All child tables (agents, services, metrics, commands) cascade on delete.
+        // Audit is recorded WITHOUT serverId so the cascade doesn't wipe this log row.
         $audit->userAction(
             action: 'server.delete',
             resourceType: 'server',
             resourceId: (string) $server->id,
-            description: "Deleted server {$server->name}",
-            serverId: $server->id,
+            description: "Deleted server {$name}",
         );
 
-        $server->delete();
-        session()->flash('success', 'Server berhasil dihapus.');
+        $server->forceDelete();
+        session()->flash('success', "Server {$name} berhasil dihapus.");
     }
 
     public function render()
