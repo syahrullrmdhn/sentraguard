@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -41,6 +43,8 @@ func main() {
 		mustRun(cmdRegister(args))
 	case "run":
 		mustRun(cmdRun(args))
+	case "update":
+		mustRun(cmdUpdate(args))
 	case "test-connection":
 		mustRun(cmdTestConnection(args))
 	case "sync-services":
@@ -64,6 +68,7 @@ Commands:
   install --server <url> --token <AGT_xxx>   Install + register as Windows Service
   register --server <url> --token <AGT_xxx>  Register only (write config + store token)
   run [--config <path>]                      Run the agent loops in foreground
+  update [--server <url>]                    Check for updates and self-update if available
   uninstall                                  Remove the Windows Service
   start | stop | restart | status            Service control
   test-connection [--server <url>]           Verify dashboard reachability
@@ -213,4 +218,102 @@ func cmdSyncServices(args []string) error {
 	agent.New(cfg, client, log) // constructs service manager
 	fmt.Println("Use 'run' for continuous sync; one-shot sync handled at startup.")
 	return nil
+}
+
+func cmdUpdate(args []string) error {
+	f := parseFlags(args)
+	serverURL := f["server"]
+	
+	// Try to get server URL from config if not provided
+	if serverURL == "" {
+		if cfg, err := config.Load(""); err == nil {
+			serverURL = cfg.ServerURL
+		}
+	}
+	
+	if serverURL == "" {
+		return fmt.Errorf("--server required (or a valid config)")
+	}
+	
+	// Check latest version from dashboard
+	client := api.New(serverURL)
+	latestVersion, downloadURL, err := client.CheckVersion()
+	if err != nil {
+		return fmt.Errorf("check version failed: %w", err)
+	}
+	
+	// Compare versions
+	if latestVersion == Version {
+		fmt.Printf("✅ Already up to date (v%s)\n", Version)
+		return nil
+	}
+	
+	fmt.Printf("🔄 Update available: v%s → v%s\n", Version, latestVersion)
+	fmt.Printf("📥 Downloading from %s...\n", downloadURL)
+	
+	// Download new binary to temp
+	newExePath, err := downloadUpdate(downloadURL)
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	
+	fmt.Println("⚙️  Stopping service...")
+	if err := cmdService("stop"); err != nil {
+		fmt.Printf("⚠️  Stop service warning: %v\n", err)
+	}
+	
+	// Replace current executable
+	currentExe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("get current exe path: %w", err)
+	}
+	
+	backupPath := currentExe + ".backup"
+	fmt.Println("💾 Backing up current binary...")
+	if err := os.Rename(currentExe, backupPath); err != nil {
+		return fmt.Errorf("backup current exe: %w", err)
+	}
+	
+	fmt.Println("🔄 Replacing binary...")
+	if err := os.Rename(newExePath, currentExe); err != nil {
+		// Rollback on failure
+		_ = os.Rename(backupPath, currentExe)
+		return fmt.Errorf("replace exe: %w", err)
+	}
+	
+	// Cleanup backup on success
+	_ = os.Remove(backupPath)
+	
+	fmt.Println("🚀 Starting service...")
+	if err := cmdService("start"); err != nil {
+		return fmt.Errorf("start service: %w", err)
+	}
+	
+	fmt.Printf("✅ Successfully updated to v%s\n", latestVersion)
+	return nil
+}
+
+func downloadUpdate(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("download returned HTTP %d", resp.StatusCode)
+	}
+	
+	tmpFile, err := os.CreateTemp("", "sentraguard-agent-*.exe")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+	
+	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
+		os.Remove(tmpFile.Name())
+		return "", err
+	}
+	
+	return tmpFile.Name(), nil
 }

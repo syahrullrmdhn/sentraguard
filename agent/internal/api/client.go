@@ -113,6 +113,19 @@ func (c *Client) Register(req RegisterRequest) (*RegisterResponse, error) {
 	return &resp, nil
 }
 
+// CheckVersion queries the dashboard for the latest agent version.
+// Returns (version, downloadURL, error). No auth required (public endpoint).
+func (c *Client) CheckVersion() (string, string, error) {
+	var result struct {
+		Version     string `json:"version"`
+		DownloadURL string `json:"download_url"`
+	}
+	if err := c.do(http.MethodGet, "/api/agent/version", nil, &result, false); err != nil {
+		return "", "", err
+	}
+	return result.Version, result.DownloadURL, nil
+}
+
 // Heartbeat sends a liveness signal.
 func (c *Client) Heartbeat(req HeartbeatRequest) error {
 	return c.do(http.MethodPost, "/api/agent/heartbeat", req, nil, true)
