@@ -32,8 +32,8 @@ func New(cfg *config.Config, client *api.Client, log *logging.Logger) *Runtime {
 	return &Runtime{
 		cfg:        cfg,
 		client:     client,
-		svcs:       services.NewManager(),
 		log:        log,
+		svcs:       services.NewManager(log),
 		prevStates: map[string]string{},
 	}
 }
@@ -111,7 +111,15 @@ func (r *Runtime) postMetrics() {
 }
 
 func (r *Runtime) syncServices() {
-	list := r.svcs.List(r.cfg.AllowedServices)
+	// Report ALL services on the host so the dashboard can present the full
+	// inventory; the operator picks which ones to monitor from there. Sending
+	// only the allowlist meant an unconfigured agent sent an empty list, which
+	// the backend rejected (422 "services field is required").
+	list := r.svcs.ListAll()
+	if len(list) == 0 {
+		r.log.Warn("service sync skipped: no services enumerated")
+		return
+	}
 	if err := r.client.SyncServices(api.SyncServicesRequest{Services: list}); err != nil {
 		r.log.Warn("service sync failed: %v", err)
 		return

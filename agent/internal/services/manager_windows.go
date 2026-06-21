@@ -9,13 +9,16 @@ import (
 	"golang.org/x/sys/windows/svc/mgr"
 
 	"github.com/syahrullrmdhn/sentraguard/agent/internal/api"
+	"github.com/syahrullrmdhn/sentraguard/agent/internal/logging"
 )
 
-type windowsManager struct{}
+type windowsManager struct {
+	log *logging.Logger
+}
 
 // NewManager returns the production Windows SCM-backed service manager.
-func NewManager() Manager {
-	return &windowsManager{}
+func NewManager(log *logging.Logger) Manager {
+	return &windowsManager{log: log}
 }
 
 func stateString(s svc.State) string {
@@ -110,5 +113,34 @@ func (m *windowsManager) List(names []string) []api.ServiceInfo {
 		}
 		out = append(out, info)
 	}
+	return out
+}
+
+// ListAll enumerates every service registered on the host so the dashboard can
+// present the full list for the operator to choose from.
+func (m *windowsManager) ListAll() []api.ServiceInfo {
+	manager, err := mgr.Connect()
+	if err != nil {
+		m.log.Error("service ListAll: SCM connect failed: %v", err)
+		return nil
+	}
+	defer manager.Disconnect()
+
+	names, err := manager.ListServices()
+	if err != nil {
+		m.log.Error("service ListAll: enumerate services failed: %v", err)
+		return nil
+	}
+
+	m.log.Debug("service ListAll: enumerating %d services", len(names))
+	out := make([]api.ServiceInfo, 0, len(names))
+	for _, n := range names {
+		info, err := m.Info(n)
+		if err != nil {
+			continue // service may have been removed mid-enumeration
+		}
+		out = append(out, info)
+	}
+	m.log.Info("service ListAll: collected %d services", len(out))
 	return out
 }

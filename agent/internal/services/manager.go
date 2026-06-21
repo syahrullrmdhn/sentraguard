@@ -10,4 +10,7 @@ type Manager interface {
 	Info(name string) (api.ServiceInfo, error)
 	// List returns info for the provided service names, skipping any not found.
 	List(names []string) []api.ServiceInfo
+	// ListAll enumerates every service registered on the host. Used to populate
+	// the dashboard so the operator can choose which services to monitor.
+	ListAll() []api.ServiceInfo
 }
