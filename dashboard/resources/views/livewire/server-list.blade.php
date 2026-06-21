@@ -1,4 +1,12 @@
 <div>
+    {{-- Flash Messages --}}
+    @if (session('success'))
+        <div class="mb-4 border-2 border-ok bg-ok/10 px-4 py-3 text-sm font-medium text-ink">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="mb-4 border-2 border-danger bg-danger/10 px-4 py-3 text-sm font-medium text-ink">{{ session('error') }}</div>
+    @endif
+
     {{-- Toolbar --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-1 gap-3">
@@ -33,21 +41,20 @@
                         <th class="px-6 py-3.5">IP</th>
                         <th class="px-6 py-3.5">Status Agent</th>
                         <th class="px-6 py-3.5">Heartbeat Terakhir</th>
+                        <th class="px-6 py-3.5 text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-ink/8">
                     @forelse ($servers as $server)
-                        <tr wire:key="server-{{ $server->id }}"
-                            onclick="window.location='{{ route('servers.show', $server) }}'"
-                            class="cursor-pointer hover:bg-accent-2/20 transition">
-                            <td class="px-6 py-3.5 font-bold text-ink">{{ $server->name }}</td>
-                            <td class="px-6 py-3.5">
+                        <tr wire:key="server-{{ $server->id }}" class="hover:bg-accent-2/20 transition">
+                            <td class="px-6 py-3.5 font-bold text-ink cursor-pointer" onclick="window.location='{{ route('servers.show', $server) }}'">{{ $server->name }}</td>
+                            <td class="px-6 py-3.5 cursor-pointer" onclick="window.location='{{ route('servers.show', $server) }}'">
                                 <span class="inline-flex border-2 border-ink bg-paper px-2.5 py-0.5 text-xs font-bold uppercase text-ink">
                                     {{ $server->environment }}
                                 </span>
                             </td>
-                            <td class="px-6 py-3.5 text-ink-soft" style="font-family: var(--font-mono);">{{ $server->private_ip ?? $server->public_ip ?? '—' }}</td>
-                            <td class="px-6 py-3.5">
+                            <td class="px-6 py-3.5 text-ink-soft cursor-pointer" style="font-family: var(--font-mono);" onclick="window.location='{{ route('servers.show', $server) }}'">{{ $server->private_ip ?? $server->public_ip ?? '—' }}</td>
+                            <td class="px-6 py-3.5 cursor-pointer" onclick="window.location='{{ route('servers.show', $server) }}'">
                                 @php
                                     // Jika belum pernah ada agent atau belum pernah heartbeat → waiting connection
                                     if (!$server->agent || !$server->agent->last_heartbeat_at) {
@@ -63,10 +70,17 @@
                                     {{ $st }}
                                 </span>
                             </td>
-                            <td class="px-6 py-3.5 text-ink-soft/60">{{ $server->agent?->last_heartbeat_at?->diffForHumans() ?? 'belum pernah' }}</td>
+                            <td class="px-6 py-3.5 text-ink-soft/60 cursor-pointer" onclick="window.location='{{ route('servers.show', $server) }}'">{{ $server->agent?->last_heartbeat_at?->diffForHumans() ?? 'belum pernah' }}</td>
+                            <td class="px-6 py-3.5 text-right">
+                                <button wire:click.stop="delete({{ $server->id }})"
+                                        wire:confirm="Yakin hapus server {{ $server->name }}? Data agent, services, metrics, dan command history akan ikut terhapus."
+                                        class="bg-danger px-3 py-1.5 text-xs font-bold uppercase text-white brutal brutal-hover brutal-press">
+                                    Hapus
+                                </button>
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-6 py-12 text-center text-ink-soft/50">Belum ada server. Tambahkan server pertama Anda.</td></tr>
+                        <tr><td colspan="6" class="px-6 py-12 text-center text-ink-soft/50">Belum ada server. Tambahkan server pertama Anda.</td></tr>
                     @endforelse
                 </tbody>
             </table>

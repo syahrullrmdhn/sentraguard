@@ -65,6 +65,22 @@ class ServerList extends Component
         $this->reset(['name']);
     }
 
+    public function delete($id, AuditService $audit): void
+    {
+        $server = Server::findOrFail($id);
+
+        $audit->userAction(
+            action: 'server.delete',
+            resourceType: 'server',
+            resourceId: (string) $server->id,
+            description: "Deleted server {$server->name}",
+            serverId: $server->id,
+        );
+
+        $server->delete();
+        session()->flash('success', 'Server berhasil dihapus.');
+    }
+
     public function render()
     {
         $servers = Server::with('agent')
