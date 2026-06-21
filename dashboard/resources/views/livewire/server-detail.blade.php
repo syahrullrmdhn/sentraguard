@@ -99,7 +99,7 @@
                         </div>
                         <div class="flex flex-col gap-2 sm:shrink-0">
                             <button onclick="document.getElementById('update-script-modal-{{ $server->id }}').classList.remove('hidden')"
-                                    class="border-2 border-ink bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-accent-2 hover:shadow-brutal-sm brutal">
+                                    class="border-2 border-ink bg-accent-2 px-6 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-accent hover:text-white hover:shadow-brutal-sm brutal">
                                 📋 Copy Script Install
                             </button>
                             <p class="text-center text-xs text-ink-soft">PowerShell script lengkap</p>
@@ -129,7 +129,7 @@
                             <div class="relative">
                                 <pre id="update-script-content-{{ $server->id }}" class="bg-ink text-paper p-4 text-xs font-mono overflow-x-auto border-2 border-ink" style="max-height: 400px;">{{ $updateScript ?? 'Loading...' }}</pre>
                                 <button onclick="copyUpdateScript({{ $server->id }})" 
-                                        class="absolute top-2 right-2 border-2 border-paper bg-accent px-3 py-1.5 text-xs font-bold uppercase text-ink hover:bg-accent-2 brutal">
+                                        class="absolute top-2 right-2 border-2 border-ink bg-accent-2 px-3 py-1.5 text-xs font-bold uppercase text-ink hover:bg-accent hover:text-white brutal">
                                     <span id="copy-btn-text-{{ $server->id }}">Copy Script</span>
                                 </button>
                             </div>
