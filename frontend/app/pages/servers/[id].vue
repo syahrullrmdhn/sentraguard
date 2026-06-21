@@ -44,6 +44,88 @@ onMounted(() => {
 })
 onUnmounted(() => clearInterval(timer))
 
+// Chart data
+const chartData = computed(() => {
+  if (!metrics.value?.history) return null
+  
+  const history = metrics.value.history || []
+  const labels = history.map((m: any) => new Date(m.recorded_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }))
+  const cpuData = history.map((m: any) => m.cpu_percent ?? 0)
+  const ramData = history.map((m: any) => {
+    const total = m.ram_total_mb || 1
+    return Math.round((m.ram_used_mb / total) * 100)
+  })
+  const diskData = history.map((m: any) => {
+    const total = m.disk_total_gb || 1
+    return Math.round((m.disk_used_gb / total) * 100)
+  })
+  
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'CPU %',
+        data: cpuData,
+        borderColor: '#2d3dff',
+        backgroundColor: 'rgba(45, 61, 255, 0.1)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.3,
+        fill: true,
+      },
+      {
+        label: 'RAM %',
+        data: ramData,
+        borderColor: '#e8ff47',
+        backgroundColor: 'rgba(232, 255, 71, 0.1)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.3,
+        fill: true,
+      },
+      {
+        label: 'Disk %',
+        data: diskData,
+        borderColor: '#ff6b6b',
+        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.3,
+        fill: true,
+      },
+    ],
+  }
+})
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: 'index' as const, intersect: false },
+  plugins: {
+    legend: { 
+      display: true, 
+      position: 'top' as const, 
+      labels: { font: { family: 'Space Grotesk', weight: '600' }, boxWidth: 12 } 
+    },
+    tooltip: { mode: 'index' as const, intersect: false },
+  },
+  scales: {
+    x: { 
+      grid: { display: false },
+      ticks: { font: { family: 'Space Mono', size: 10 } },
+    },
+    y: { 
+      min: 0, 
+      max: 100,
+      grid: { color: 'rgba(0,0,0,0.05)' },
+      ticks: { 
+        font: { family: 'Space Mono', size: 11 }, 
+        callback: (v: any) => v + '%' 
+      },
+    },
+  },
+}
+
 const statusBadge = computed(() => {
   const st = server.value?.connection_status
   if (st === 'online') return 'bg-ok text-white'
@@ -187,6 +269,15 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
               </div>
             </div>
           </div>
+          
+          <!-- Chart history -->
+          <div v-if="chartData" class="mt-6 brutal-lg bg-white p-6">
+            <h3 class="swiss-label mb-4">History Metrics (30 menit terakhir)</h3>
+            <div style="height: 300px;">
+              <LineChart :data="chartData" :options="chartOptions" />
+            </div>
+          </div>
+          
           <p class="mt-4 text-xs text-ink-soft">{{ metrics.history?.length ?? 0 }} titik data · auto-refresh 10 detik</p>
         </div>
       </div>
