@@ -72,6 +72,32 @@ class ServerDetail extends Component
         }
     }
 
+    /**
+     * Trigger agent self-update command.
+     */
+    public function updateAgent(CommandService $commands, AuditService $audit): void
+    {
+        try {
+            $commands->queueRaw(
+                server: $this->server,
+                command: 'update',
+                userId: auth()->id(),
+            );
+
+            $audit->userAction(
+                action: 'agent.update_triggered',
+                resourceType: 'server',
+                resourceId: (string) $this->server->id,
+                description: "Triggered agent self-update from v{$this->server->agent->agent_version} to latest",
+                serverId: $this->server->id,
+            );
+
+            session()->flash('cmd_ok', 'Update agent berhasil di-queue. Tunggu ~60 detik, agent akan restart otomatis.');
+        } catch (\Exception $e) {
+            session()->flash('cmd_err', 'Gagal queue update: ' . $e->getMessage());
+        }
+    }
+
     public function render()
     {
         $this->server->load('agent');

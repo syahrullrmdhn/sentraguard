@@ -17,6 +17,7 @@ class CommandService
         'disable_service',
         'get_service_status',
         'sync_services',
+        'update', // Agent self-update command
     ];
 
     public function __construct(
@@ -73,6 +74,44 @@ class CommandService
         );
 
         return $command;
+    }
+
+    /**
+     * Queue a raw command without service targeting (e.g., 'update', 'sync_services').
+     * Skips allowlist checks since these are server-level actions, not service actions.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function queueRaw(
+        Server $server,
+        string $command,
+        ?int $userId = null,
+        ?int $timeoutSeconds = null
+    ): ServiceCommand {
+        if (! in_array($command, self::ALLOWED_ACTIONS, true)) {
+            throw new \InvalidArgumentException("Invalid command: {$command}");
+        }
+
+        $cmd = ServiceCommand::create([
+            'server_id' => $server->id,
+            'user_id' => $userId,
+            'service_name' => '', // Empty for non-service commands
+            'action' => $command,
+            'status' => 'pending',
+            'timeout_seconds' => $timeoutSeconds ?? config('agent.command_timeout', 60),
+            'requested_at' => now(),
+        ]);
+
+        $this->audit->userAction(
+            action: 'command.queue',
+            resourceType: 'command',
+            resourceId: (string) $cmd->id,
+            description: "Queued {$command}",
+            serverId: $server->id,
+            metadata: ['action' => $command],
+        );
+
+        return $cmd;
     }
 
     /**

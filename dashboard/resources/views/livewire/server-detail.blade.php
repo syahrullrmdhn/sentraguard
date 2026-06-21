@@ -62,6 +62,36 @@
                     </div>
                 @endforeach
             </div>
+
+            {{-- Update Agent Button --}}
+            @php
+                $latestVersion = config('agent.latest_version', '1.0.6');
+                $currentVersion = $server->agent->agent_version ?? '0.0.0';
+                $updateAvailable = version_compare($currentVersion, $latestVersion, '<');
+            @endphp
+            @if ($updateAvailable && $server->agent && $server->agent->status === 'online')
+                <div class="mt-6 neu p-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-bold text-ink">🔄 Update Tersedia</p>
+                            <p class="mt-1 text-xs text-ink-soft">
+                                Agent versi <span class="font-semibold">{{ $currentVersion }}</span> → 
+                                <span class="font-semibold text-accent">{{ $latestVersion }}</span>
+                            </p>
+                            <p class="mt-2 text-xs text-ink-soft">
+                                Update akan download binary terbaru, stop service, replace file, dan restart otomatis. 
+                                Proses memakan ~60 detik. Server tetap bisa diakses setelah restart.
+                            </p>
+                        </div>
+                        <button wire:click="updateAgent" 
+                                wire:loading.attr="disabled"
+                                class="shrink-0 border-2 border-ink bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide text-ink transition hover:bg-accent-2 disabled:opacity-50 brutal">
+                            <span wire:loading.remove wire:target="updateAgent">Update Sekarang</span>
+                            <span wire:loading wire:target="updateAgent">Queueing...</span>
+                        </button>
+                    </div>
+                </div>
+            @endif
         @endif
 
         {{-- Metrics --}}
