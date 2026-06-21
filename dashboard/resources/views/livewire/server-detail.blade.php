@@ -132,7 +132,7 @@
                         </div>
                         <div class="mt-3 h-3 w-full overflow-hidden border-2 border-ink bg-paper">
                             <div class="h-full {{ $pct > 85 ? 'bg-danger' : ($pct > 60 ? 'bg-accent-2' : 'bg-ok') }}"
-                                 {!! 'style="width: ' . min($pct, 100) . '%;"' !!}></div>
+                                 style="width: {{ min($pct, 100) }}%;"></div>
                         </div>
                     </div>
                 @endforeach
