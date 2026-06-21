@@ -13,16 +13,44 @@ const server = computed(() => detail.value?.server)
 
 // Lazy-loaded per tab
 const metrics = ref<any>(null)
-const services = ref<any[]>([])
+const servicesData = ref<any>(null)
 const commands = ref<any[]>([])
 
+// Metrics: range selector
+const metricsRange = ref('1h')
+const rangeOptions = [
+  { value: '30m', label: '30 Menit' },
+  { value: '1h', label: '1 Jam' },
+  { value: '3h', label: '3 Jam' },
+  { value: '24h', label: '24 Jam' },
+]
+
 const loadMetrics = async () => {
-  metrics.value = await api.get<any>(`/api/servers/${id}/metrics`)
+  metrics.value = await api.get<any>(`/api/servers/${id}/metrics?range=${metricsRange.value}`)
 }
+
+watch(metricsRange, () => loadMetrics())
+
+// Services: pagination + search
+const servicesSearch = ref('')
+const servicesPage = ref(1)
+
 const loadServices = async () => {
-  const r = await api.get<any>(`/api/servers/${id}/services`)
-  services.value = r.services
+  const params = new URLSearchParams()
+  if (servicesSearch.value) params.set('search', servicesSearch.value)
+  params.set('page', String(servicesPage.value))
+  servicesData.value = await api.get<any>(`/api/servers/${id}/services?${params}`)
 }
+
+watch([servicesSearch, servicesPage], () => loadServices())
+
+const services = computed(() => servicesData.value?.data || [])
+const servicesMeta = computed(() => ({
+  current_page: servicesData.value?.current_page || 1,
+  last_page: servicesData.value?.last_page || 1,
+  total: servicesData.value?.total || 0,
+}))
+
 const loadCommands = async () => {
   const r = await api.get<any>(`/api/servers/${id}/commands`)
   commands.value = r.commands
@@ -30,7 +58,7 @@ const loadCommands = async () => {
 
 watch(tab, (t) => {
   if (t === 'metrics' && !metrics.value) loadMetrics()
-  if (t === 'services' && !services.value.length) loadServices()
+  if (t === 'services' && !servicesData.value) loadServices()
   if (t === 'commands' && !commands.value.length) loadCommands()
 })
 
@@ -254,6 +282,14 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
       <div v-else-if="tab === 'metrics'">
         <div v-if="!metrics" class="text-sm text-ink-soft">Memuat metrics...</div>
         <div v-else>
+          <!-- Range selector -->
+          <div class="mb-4 flex items-center gap-3">
+            <label class="swiss-label text-sm">Range:</label>
+            <select v-model="metricsRange" class="border-2 border-ink bg-white px-3 py-1.5 text-sm font-bold uppercase tracking-wide text-ink brutal-sm focus:outline-none focus:ring-2 focus:ring-accent">
+              <option v-for="opt in rangeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
+
           <div class="grid gap-4 sm:grid-cols-3">
             <div v-for="g in [
               ['CPU', metrics.latest?.cpu_percent ?? 0],
@@ -272,7 +308,7 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
           
           <!-- Chart history -->
           <div v-if="chartData" class="mt-6 brutal-lg bg-white p-6">
-            <h3 class="swiss-label mb-4">History Metrics (30 menit terakhir)</h3>
+            <h3 class="swiss-label mb-4">History Metrics</h3>
             <div style="height: 300px;">
               <LineChart :data="chartData" :options="chartOptions" />
             </div>
@@ -284,45 +320,82 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
 
       <!-- SERVICES -->
       <div v-else-if="tab === 'services'">
-        <div v-if="!services.length" class="text-sm text-ink-soft">Memuat services...</div>
-        <div v-else class="brutal-lg bg-white">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b-2 border-ink text-left swiss-label">
-                  <th class="px-5 py-3">Service</th>
-                  <th class="px-5 py-3">Status</th>
-                  <th class="px-5 py-3">Startup</th>
-                  <th class="px-5 py-3">Allowed</th>
-                  <th class="px-5 py-3 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-ink/10">
-                <tr v-for="svc in services" :key="svc.id" class="hover:bg-paper">
-                  <td class="px-5 py-3">
-                    <p class="font-bold font-mono text-ink">{{ svc.service_name }}</p>
-                    <p class="text-xs text-ink-soft">{{ svc.display_name }}</p>
-                  </td>
-                  <td class="px-5 py-3">
-                    <span class="inline-flex border-2 border-ink px-2 py-0.5 text-xs font-bold uppercase" :class="svc.status === 'Running' ? 'bg-ok text-white' : 'bg-neutral text-white'">{{ svc.status }}</span>
-                  </td>
-                  <td class="px-5 py-3 text-xs">{{ svc.startup_type ?? '—' }}</td>
-                  <td class="px-5 py-3">
-                    <button @click="toggleAllow(svc)" class="border-2 border-ink px-2 py-0.5 text-xs font-bold uppercase" :class="svc.is_allowed ? 'bg-ok text-white' : 'bg-white text-ink'">
-                      {{ svc.is_allowed ? 'Ya' : 'Tidak' }}
-                    </button>
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    <div class="inline-flex gap-1">
-                      <button @click="runAction(svc, 'restart_service')" :disabled="!svc.is_allowed" class="border-2 border-ink bg-white px-2 py-0.5 text-xs font-bold uppercase hover:bg-accent-2 disabled:opacity-40">Restart</button>
-                      <button @click="runAction(svc, svc.status === 'Running' ? 'stop_service' : 'start_service')" :disabled="!svc.is_allowed" class="border-2 border-ink bg-white px-2 py-0.5 text-xs font-bold uppercase hover:bg-accent-2 disabled:opacity-40">
-                        {{ svc.status === 'Running' ? 'Stop' : 'Start' }}
+        <!-- Search bar -->
+        <div class="mb-4 flex items-center gap-3">
+          <input 
+            v-model="servicesSearch" 
+            type="text" 
+            placeholder="Cari service (nama atau display name)..." 
+            class="flex-1 border-2 border-ink bg-white px-4 py-2 text-sm font-medium text-ink placeholder-ink-soft brutal-sm focus:outline-none focus:ring-2 focus:ring-accent"
+          />
+        </div>
+
+        <div v-if="!servicesData" class="text-sm text-ink-soft">Memuat services...</div>
+        <div v-else-if="!services.length" class="text-sm text-ink-soft">Tidak ada service ditemukan.</div>
+        <div v-else>
+          <div class="brutal-lg bg-white">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b-2 border-ink text-left swiss-label">
+                    <th class="px-5 py-3">Service</th>
+                    <th class="px-5 py-3">Status</th>
+                    <th class="px-5 py-3">Startup</th>
+                    <th class="px-5 py-3">Allowed</th>
+                    <th class="px-5 py-3 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-ink/10">
+                  <tr v-for="svc in services" :key="svc.id" class="hover:bg-paper">
+                    <td class="px-5 py-3">
+                      <p class="font-bold font-mono text-ink">{{ svc.service_name }}</p>
+                      <p class="text-xs text-ink-soft">{{ svc.display_name }}</p>
+                    </td>
+                    <td class="px-5 py-3">
+                      <span class="inline-flex border-2 border-ink px-2 py-0.5 text-xs font-bold uppercase" :class="svc.status === 'Running' ? 'bg-ok text-white' : 'bg-neutral text-white'">{{ svc.status }}</span>
+                    </td>
+                    <td class="px-5 py-3 text-xs">{{ svc.startup_type ?? '—' }}</td>
+                    <td class="px-5 py-3">
+                      <button @click="toggleAllow(svc)" class="border-2 border-ink px-2 py-0.5 text-xs font-bold uppercase transition hover:opacity-80" :class="svc.is_allowed ? 'bg-ok text-white' : 'bg-white text-ink'">
+                        {{ svc.is_allowed ? 'Ya' : 'Tidak' }}
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                    <td class="px-5 py-3 text-right">
+                      <div class="inline-flex gap-1">
+                        <button @click="runAction(svc, 'restart_service')" :disabled="!svc.is_allowed" class="border-2 border-ink bg-white px-2 py-0.5 text-xs font-bold uppercase transition hover:bg-accent-2 disabled:opacity-40 disabled:cursor-not-allowed">Restart</button>
+                        <button @click="runAction(svc, svc.status === 'Running' ? 'stop_service' : 'start_service')" :disabled="!svc.is_allowed" class="border-2 border-ink bg-white px-2 py-0.5 text-xs font-bold uppercase transition hover:bg-accent-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                          {{ svc.status === 'Running' ? 'Stop' : 'Start' }}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div v-if="servicesMeta.last_page > 1" class="mt-4 flex items-center justify-between">
+            <p class="text-xs text-ink-soft">{{ servicesMeta.total }} services total</p>
+            <div class="flex gap-1">
+              <button 
+                @click="servicesPage = servicesMeta.current_page - 1" 
+                :disabled="servicesMeta.current_page === 1"
+                class="border-2 border-ink bg-white px-3 py-1 text-xs font-bold uppercase text-ink transition hover:bg-accent-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ← Prev
+              </button>
+              <span class="flex items-center border-2 border-ink bg-paper px-3 py-1 text-xs font-bold text-ink">
+                {{ servicesMeta.current_page }} / {{ servicesMeta.last_page }}
+              </span>
+              <button 
+                @click="servicesPage = servicesMeta.current_page + 1" 
+                :disabled="servicesMeta.current_page === servicesMeta.last_page"
+                class="border-2 border-ink bg-white px-3 py-1 text-xs font-bold uppercase text-ink transition hover:bg-accent-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next →
+              </button>
+            </div>
           </div>
         </div>
       </div>

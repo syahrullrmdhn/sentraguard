@@ -96,29 +96,48 @@ class ServerApiController extends Controller
     }
 
     /**
-     * GET /api/servers/{server}/metrics — last hour history.
+     * GET /api/servers/{server}/metrics?range=30m|1h|3h|24h (default: 1h)
      */
-    public function metrics(Server $server): JsonResponse
+    public function metrics(Request $request, Server $server): JsonResponse
     {
+        $range = $request->input('range', '1h');
+        $since = match ($range) {
+            '30m' => now()->subMinutes(30),
+            '1h' => now()->subHour(),
+            '3h' => now()->subHours(3),
+            '24h' => now()->subHours(24),
+            default => now()->subHour(),
+        };
+
         $history = $server->metrics()
-            ->where('collected_at', '>=', now()->subHour())
+            ->where('collected_at', '>=', $since)
             ->orderBy('collected_at')
             ->get(['cpu_percent', 'ram_used_mb', 'ram_total_mb', 'disk_used_gb', 'disk_total_gb', 'collected_at']);
 
         return response()->json([
             'history' => $history,
             'latest' => $server->latestMetric(),
+            'range' => $range,
         ]);
     }
 
     /**
-     * GET /api/servers/{server}/services
+     * GET /api/servers/{server}/services?search=...&page=1
      */
-    public function services(Server $server): JsonResponse
+    public function services(Request $request, Server $server): JsonResponse
     {
-        $services = $server->services()->orderBy('service_name')->get();
+        $query = $server->services();
 
-        return response()->json(['services' => $services]);
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('service_name', 'like', "%{$search}%")
+                  ->orWhere('display_name', 'like', "%{$search}%");
+            });
+        }
+
+        $services = $query->orderBy('service_name')->paginate(20);
+
+        return response()->json($services);
     }
 
     /**
