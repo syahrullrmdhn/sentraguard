@@ -63,32 +63,49 @@
                 @endforeach
             </div>
 
-            {{-- Update Agent Button --}}
+            {{-- Update Agent Card --}}
             @php
                 $latestVersion = config('agent.latest_version', '1.0.6');
                 $currentVersion = $server->agent->agent_version ?? '0.0.0';
                 $updateAvailable = version_compare($currentVersion, $latestVersion, '<');
             @endphp
             @if ($updateAvailable && $server->agent && $server->agent->status === 'online')
-                <div class="mt-6 neu p-6">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <p class="text-sm font-bold text-ink">🔄 Update Tersedia</p>
-                            <p class="mt-1 text-xs text-ink-soft">
-                                Agent versi <span class="font-semibold">{{ $currentVersion }}</span> → 
-                                <span class="font-semibold text-accent">{{ $latestVersion }}</span>
-                            </p>
-                            <p class="mt-2 text-xs text-ink-soft">
-                                Update akan download binary terbaru, stop service, replace file, dan restart otomatis. 
-                                Proses memakan ~60 detik. Server tetap bisa diakses setelah restart.
-                            </p>
+                <div class="mt-6 border-2 border-accent bg-accent/5 p-6 shadow-brutal">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">🔄</span>
+                                <h3 class="text-base font-bold uppercase tracking-wide text-ink">Update Tersedia</h3>
+                            </div>
+                            <div class="mt-3 space-y-2">
+                                <p class="text-sm text-ink">
+                                    <span class="font-medium">Versi saat ini:</span> 
+                                    <span class="inline-flex items-center border border-ink bg-white px-2 py-0.5 text-xs font-mono font-semibold">v{{ $currentVersion }}</span>
+                                </p>
+                                <p class="text-sm text-ink">
+                                    <span class="font-medium">Versi terbaru:</span> 
+                                    <span class="inline-flex items-center border-2 border-accent bg-accent px-2 py-0.5 text-xs font-mono font-bold">v{{ $latestVersion }}</span>
+                                </p>
+                            </div>
+                            <div class="mt-4 border-l-4 border-ink-soft bg-paper pl-3 py-2 text-xs text-ink-soft">
+                                <p><strong>Proses update:</strong></p>
+                                <ul class="mt-1 space-y-0.5 list-disc list-inside">
+                                    <li>Download binary terbaru (~7MB)</li>
+                                    <li>Stop service → backup → replace file</li>
+                                    <li>Restart service otomatis</li>
+                                    <li>Durasi total: ~60 detik</li>
+                                </ul>
+                            </div>
                         </div>
-                        <button wire:click="updateAgent" 
-                                wire:loading.attr="disabled"
-                                class="shrink-0 border-2 border-ink bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide text-ink transition hover:bg-accent-2 disabled:opacity-50 brutal">
-                            <span wire:loading.remove wire:target="updateAgent">Update Sekarang</span>
-                            <span wire:loading wire:target="updateAgent">Queueing...</span>
-                        </button>
+                        <div class="flex flex-col gap-2 sm:shrink-0">
+                            <button wire:click="updateAgent" 
+                                    wire:loading.attr="disabled"
+                                    class="border-2 border-ink bg-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-accent-2 hover:shadow-brutal-sm disabled:opacity-50 disabled:cursor-not-allowed brutal">
+                                <span wire:loading.remove wire:target="updateAgent">Update Sekarang</span>
+                                <span wire:loading wire:target="updateAgent">⏳ Queueing...</span>
+                            </button>
+                            <p class="text-center text-xs text-ink-soft">Server tetap online</p>
+                        </div>
                     </div>
                 </div>
             @endif
