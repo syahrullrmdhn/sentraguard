@@ -4,13 +4,25 @@ package token
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/billgraziano/dpapi"
-	"github.com/danieljoos/wincred"
+
+	"github.com/syahrullrmdhn/sentraguard/agent/internal/config"
 )
 
-// windowsStore stores the runtime token in Windows Credential Manager, with the
-// blob encrypted at rest via DPAPI (machine scope).
+// windowsStore stores the runtime token as a DPAPI-encrypted file under
+// ProgramData.
+//
+// WHY A FILE, NOT CREDENTIAL MANAGER:
+// Install runs as the interactive admin user; the Windows Service runs as
+// LocalSystem. Windows Credential Manager is per-user — a credential written
+// by the admin is NOT visible to LocalSystem (lookup returns "Element not
+// found"), so the service worker could never load the token. ProgramData is
+// readable by every account on the host, and DPAPI machine-local encryption
+// lets any principal on the same machine decrypt the blob. Together this lets
+// the admin-run install hand the token to the LocalSystem service cleanly.
 type windowsStore struct{}
 
 // NewStore returns the production Windows-backed token store.
@@ -18,33 +30,33 @@ func NewStore() Store {
 	return &windowsStore{}
 }
 
+// tokenPath is the on-disk location of the encrypted runtime token.
+func tokenPath() string {
+	return filepath.Join(config.DataDir(), "runtime.token")
+}
+
 func (s *windowsStore) Save(token string) error {
-	// MachineLocal scope is REQUIRED: install runs as the interactive admin user,
-	// but the Windows Service runs as LocalSystem. User-scope DPAPI (Encrypt) would
-	// encrypt under the admin's profile key and LocalSystem could never decrypt it,
-	// silently killing the service's worker goroutine. Machine scope lets any
-	// principal on this host decrypt.
 	encrypted, err := dpapi.EncryptMachineLocal(token)
 	if err != nil {
 		return fmt.Errorf("dpapi encrypt: %w", err)
 	}
 
-	cred := wincred.NewGenericCredential(credTarget)
-	cred.UserName = credUsername
-	cred.CredentialBlob = []byte(encrypted)
-	cred.Persist = wincred.PersistLocalMachine
-	if err := cred.Write(); err != nil {
-		return fmt.Errorf("wincred write: %w", err)
+	path := tokenPath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("create data dir: %w", err)
+	}
+	if err := os.WriteFile(path, []byte(encrypted), 0o600); err != nil {
+		return fmt.Errorf("write token file: %w", err)
 	}
 	return nil
 }
 
 func (s *windowsStore) Load() (string, error) {
-	cred, err := wincred.GetGenericCredential(credTarget)
+	data, err := os.ReadFile(tokenPath())
 	if err != nil {
-		return "", fmt.Errorf("wincred get: %w", err)
+		return "", fmt.Errorf("read token file: %w", err)
 	}
-	decrypted, err := dpapi.Decrypt(string(cred.CredentialBlob))
+	decrypted, err := dpapi.Decrypt(string(data))
 	if err != nil {
 		return "", fmt.Errorf("dpapi decrypt: %w", err)
 	}
@@ -52,9 +64,9 @@ func (s *windowsStore) Load() (string, error) {
 }
 
 func (s *windowsStore) Delete() error {
-	cred, err := wincred.GetGenericCredential(credTarget)
-	if err != nil {
-		return nil // already absent
+	err := os.Remove(tokenPath())
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove token file: %w", err)
 	}
-	return cred.Delete()
+	return nil
 }
