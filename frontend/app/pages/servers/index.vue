@@ -120,7 +120,7 @@ const statusBadge = (s: any) => {
                 </span>
               </td>
               <td class="px-5 py-3">
-                <a href="/download/SentraGuardInstaller.exe" download class="inline-flex items-center gap-1 border-2 border-ink bg-accent px-2 py-1 text-xs font-bold uppercase text-white hover:bg-accent-2 hover:text-ink brutal-sm">
+                <a href="/download/SentraGuardInstaller-v2.exe" download class="inline-flex items-center gap-1 border-2 border-ink bg-accent px-2 py-1 text-xs font-bold uppercase text-white hover:bg-accent-2 hover:text-ink brutal-sm">
                   <span>⬇</span> Installer
                 </a>
               </td>
@@ -156,8 +156,8 @@ const statusBadge = (s: any) => {
               <div class="mt-4">
                 <label class="swiss-label">Opsi 1: GUI Installer (Recommended)</label>
                 <p class="mt-1.5 text-xs text-ink-soft mb-2">Download installer dengan antarmuka grafis, tinggal paste token.</p>
-                <a :href="`${$config.public.apiBase}/download/SentraGuardInstaller.exe`" download class="inline-flex items-center gap-2 border-2 border-ink bg-accent px-3 py-2 text-sm font-bold uppercase text-white brutal-sm brutal-press hover:bg-accent-2 hover:text-ink">
-                  <span>⬇</span> Download GUI Installer
+                <a :href="`${$config.public.apiBase}/download/SentraGuardInstaller-v2.exe`" download class="inline-flex items-center gap-2 border-2 border-ink bg-accent px-3 py-2 text-sm font-bold uppercase text-white brutal-sm brutal-press hover:bg-accent-2 hover:text-ink">
+                  <span>⬇</span> Download GUI Installer v2
                 </a>
               </div>
 
