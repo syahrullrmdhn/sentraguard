@@ -132,12 +132,23 @@ func runInstallation(server, token string) (string, error) {
 	// Step 1: Download agent
 	agentURL := server + "/download/agent"
 	tempDir := os.TempDir()
-	agentPath := filepath.Join(tempDir, "sentraguard-agent.exe")
+	
+	// Use random filename to avoid conflicts
+	randomName := fmt.Sprintf("sentraguard-agent-%d.exe", time.Now().UnixNano())
+	agentPath := filepath.Join(tempDir, randomName)
 
 	if err := downloadFile(agentPath, agentURL); err != nil {
 		return "Download failed", fmt.Errorf("failed to download agent: %w", err)
 	}
-	defer os.Remove(agentPath)
+	
+	// Wait for antivirus scan to complete
+	time.Sleep(2 * time.Second)
+	
+	// Cleanup on exit (best effort, ignore errors)
+	defer func() {
+		time.Sleep(1 * time.Second)
+		os.Remove(agentPath)
+	}()
 
 	// Step 2: Install agent
 	cmd := exec.Command(agentPath, "install", "--server", server, "--token", token)
