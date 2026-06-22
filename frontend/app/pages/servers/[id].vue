@@ -232,7 +232,6 @@ const infoCards = computed(() => {
   return [
     ['Hostname', s.hostname ?? '—'],
     ['OS', [s.os_name, s.os_version].filter(Boolean).join(' ') || '—'],
-    ['Environment', s.environment],
     ['Private IP', s.private_ip ?? '—'],
     ['Public IP', s.public_ip ?? 'waiting / not connected'],
     ['Agent Version', s.agent?.agent_version ?? '—'],
@@ -254,6 +253,24 @@ const showUpdate = ref(false)
 const updateScript = ref('')
 const scriptLoading = ref(false)
 const copyLabel = ref('Copy Script')
+
+// ---- Environment change ----
+const environmentOptions = ['production', 'staging', 'development', 'testing']
+const changingEnvironment = ref(false)
+
+const updateEnvironment = async (newEnv: string) => {
+  if (!confirm(`Ubah environment ke ${newEnv}?`)) return
+  
+  changingEnvironment.value = true
+  try {
+    await api.patch(`/api/servers/${id}`, { environment: newEnv })
+    await refresh()
+  } catch (e: any) {
+    alert(e?.data?.message || 'Gagal mengubah environment')
+  } finally {
+    changingEnvironment.value = false
+  }
+}
 
 const openUpdate = async () => {
   showUpdate.value = true
@@ -397,6 +414,26 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
           <div v-for="[label, value] in infoCards" :key="label" class="brutal bg-white p-4">
             <p class="swiss-label">{{ label }}</p>
             <p class="mt-1.5 text-sm font-semibold text-ink break-words">{{ value }}</p>
+          </div>
+        </div>
+
+        <!-- Environment Selector -->
+        <div class="mt-6 brutal bg-white p-6">
+          <label class="swiss-label">Environment</label>
+          <p class="mt-1 text-xs text-ink-soft mb-3">Ubah environment server untuk menandai production, staging, development, atau testing.</p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="env in environmentOptions"
+              :key="env"
+              @click="updateEnvironment(env)"
+              :disabled="changingEnvironment || server.environment === env"
+              class="border-2 px-4 py-2 text-sm font-bold uppercase transition disabled:cursor-not-allowed"
+              :class="server.environment === env 
+                ? 'border-accent bg-accent text-white' 
+                : 'border-ink bg-white text-ink hover:bg-accent-2 brutal-sm'"
+            >
+              {{ env }}
+            </button>
           </div>
         </div>
 
