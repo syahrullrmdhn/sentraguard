@@ -102,6 +102,7 @@ const statusBadge = (s: any) => {
               <th class="px-5 py-3">Environment</th>
               <th class="px-5 py-3">Agent</th>
               <th class="px-5 py-3">Status</th>
+              <th class="px-5 py-3">Download</th>
               <th class="px-5 py-3 text-right">Aksi</th>
             </tr>
           </thead>
@@ -118,6 +119,11 @@ const statusBadge = (s: any) => {
                   <span class="h-1.5 w-1.5 rounded-full bg-white"></span>{{ s.connection_status }}
                 </span>
               </td>
+              <td class="px-5 py-3">
+                <a href="/download/SentraGuardInstaller.exe" download class="inline-flex items-center gap-1 border-2 border-ink bg-accent px-2 py-1 text-xs font-bold uppercase text-white hover:bg-accent-2 hover:text-ink brutal-sm">
+                  <span>⬇</span> Installer
+                </a>
+              </td>
               <td class="px-5 py-3 text-right">
                 <button @click="deleteServer(s.id, s.name)" class="border-2 border-ink bg-white px-2.5 py-1 text-xs font-bold uppercase text-ink transition hover:bg-danger hover:text-white brutal-sm">
                   Hapus
@@ -125,7 +131,7 @@ const statusBadge = (s: any) => {
               </td>
             </tr>
             <tr v-if="!(data?.data ?? []).length">
-              <td colspan="6" class="px-5 py-8 text-center text-ink-soft">Belum ada server.</td>
+              <td colspan="7" class="px-5 py-8 text-center text-ink-soft">Belum ada server.</td>
             </tr>
           </tbody>
         </table>
