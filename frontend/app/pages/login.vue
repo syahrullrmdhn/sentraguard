@@ -7,15 +7,39 @@ const password = ref('')
 const remember = ref(false)
 const error = ref('')
 const loading = ref(false)
+const turnstileToken = ref('')
+const turnstileRef = ref()
+
+const TURNSTILE_SITE_KEY = '0x4AAAAAADo3KNHO2c3HnNcP'
+
+const onTurnstileVerified = (token: string) => {
+  turnstileToken.value = token
+}
+
+const onTurnstileError = () => {
+  error.value = 'Verifikasi gagal. Silakan coba lagi.'
+  turnstileRef.value?.reset()
+}
+
+const onTurnstileExpired = () => {
+  turnstileToken.value = ''
+}
 
 const submit = async () => {
+  if (!turnstileToken.value) {
+    error.value = 'Silakan selesaikan verifikasi terlebih dahulu.'
+    return
+  }
+
   error.value = ''
   loading.value = true
   try {
-    await login(email.value, password.value, remember.value)
+    await login(email.value, password.value, remember.value, turnstileToken.value)
     await navigateTo('/')
   } catch (e: any) {
     error.value = e?.data?.message || 'Email atau password salah.'
+    turnstileRef.value?.reset()
+    turnstileToken.value = ''
   } finally {
     loading.value = false
   }
@@ -66,9 +90,20 @@ const submit = async () => {
           Ingat saya
         </label>
 
+        <div class="flex justify-center">
+          <Turnstile
+            ref="turnstileRef"
+            :site-key="TURNSTILE_SITE_KEY"
+            theme="light"
+            @verified="onTurnstileVerified"
+            @error="onTurnstileError"
+            @expired="onTurnstileExpired"
+          />
+        </div>
+
         <button
           type="submit"
-          :disabled="loading"
+          :disabled="loading || !turnstileToken"
           class="w-full border-2 border-ink bg-accent-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-accent hover:text-white disabled:opacity-50 brutal brutal-press"
         >
           {{ loading ? 'Masuk...' : 'Masuk' }}

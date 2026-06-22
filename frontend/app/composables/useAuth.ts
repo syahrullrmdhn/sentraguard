@@ -45,14 +45,14 @@ export const useAuth = () => {
     return token ? { 'X-XSRF-TOKEN': token, Accept: 'application/json' } : { Accept: 'application/json' }
   }
 
-  const login = async (email: string, password: string, remember = false) => {
+  const login = async (email: string, password: string, remember = false, turnstileToken = '') => {
     await csrf()
     const res = await $fetch<{ user: User }>('/api/auth/login', {
       baseURL: apiBase,
       method: 'POST',
       credentials: 'include',
       headers: authHeaders(),
-      body: { email, password, remember },
+      body: { email, password, remember, cf_turnstile_response: turnstileToken },
     })
     user.value = res.user
     return res.user

@@ -20,7 +20,16 @@ class AuthApiController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'cf_turnstile_response' => ['required', 'string'],
         ]);
+
+        // Verify Turnstile
+        $turnstileService = app(\App\Services\TurnstileService::class);
+        if (!$turnstileService->verify($request->input('cf_turnstile_response'), $request->ip())) {
+            throw ValidationException::withMessages([
+                'email' => ['Verifikasi keamanan gagal. Silakan coba lagi.'],
+            ]);
+        }
 
         $remember = $request->boolean('remember');
 
