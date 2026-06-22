@@ -73,15 +73,15 @@ watch(tab, (t) => {
   if (t === 'commands' && !commands.value.length) loadCommands()
 })
 
-// Auto-refresh overview/metrics every 10s
-let timer: any = null
-onMounted(() => {
-  timer = setInterval(async () => {
-    await refresh()
-    if (tab.value === 'metrics') await loadMetrics()
-  }, 10000)
-})
-onUnmounted(() => clearInterval(timer))
+// Auto-refresh disabled - manual refresh via button instead
+// let timer: any = null
+// onMounted(() => {
+//   timer = setInterval(async () => {
+//     await refresh()
+//     if (tab.value === 'metrics') await loadMetrics()
+//   }, 10000)
+// })
+// onUnmounted(() => clearInterval(timer))
 
 // Chart data
 const chartData = computed(() => {
