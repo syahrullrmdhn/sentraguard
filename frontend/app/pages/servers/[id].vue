@@ -332,9 +332,24 @@ const toggleAllow = async (svc: any) => {
   await loadServices()
 }
 const runAction = async (svc: any, action: string) => {
+  // Map action to friendly name
+  const actionLabels: Record<string, string> = {
+    'start_service': 'START',
+    'stop_service': 'STOP',
+    'restart_service': 'RESTART',
+  }
+  const actionLabel = actionLabels[action] || action.toUpperCase()
+  
+  // Confirm dialog
+  const ok = await modal.openConfirm(
+    `${actionLabel} service "${svc.display_name || svc.service_name}"?\n\nTindakan ini akan segera dieksekusi di server.`
+  )
+  if (!ok) return
+  
   try {
     await api.post(`/api/servers/${id}/services/${svc.id}/action`, { action })
     await loadCommands()
+    modal.openAlert(`Command ${actionLabel} berhasil di-queue! Cek tab Commands untuk status.`)
   } catch (e: any) {
     modal.openAlert(e?.data?.message || 'Gagal queue command.')
   }
