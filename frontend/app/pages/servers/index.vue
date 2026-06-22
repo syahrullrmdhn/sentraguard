@@ -46,6 +46,13 @@ const createServer = async () => {
 
 const copyToken = () => navigator.clipboard.writeText(generatedToken.value)
 
+const installCommand = computed(() => {
+  if (!generatedToken.value) return ''
+  return `iwr -Uri https://sentraguard.mastolongin.web.id/download/agent -OutFile agent.exe; .\\agent.exe install ${generatedToken.value}`
+})
+
+const copyInstallCommand = () => navigator.clipboard.writeText(installCommand.value)
+
 const deleteServer = async (id: number, name: string) => {
   const ok = await modal.openConfirm(`Hapus server "${name}"? Tindakan ini permanen.`)
   if (!ok) return
@@ -137,13 +144,27 @@ const statusBadge = (s: any) => {
             <!-- Token result -->
             <div v-if="generatedToken">
               <div class="border-2 border-ok bg-ok/10 px-4 py-3 text-sm">
-                Server <strong>{{ generatedName }}</strong> berhasil dibuat. Copy token registrasi:
+                ✅ Server <strong>{{ generatedName }}</strong> berhasil dibuat!
               </div>
-              <div class="relative mt-3">
-                <pre class="border-2 border-ink bg-ink p-3 text-xs font-mono text-paper overflow-x-auto">{{ generatedToken }}</pre>
-                <button @click="copyToken" class="absolute top-2 right-2 border-2 border-ink bg-accent-2 px-2 py-1 text-xs font-bold uppercase brutal-sm">Copy</button>
+              
+              <div class="mt-4">
+                <label class="swiss-label">1. Install Agent di Windows Server</label>
+                <div class="relative mt-2">
+                  <pre class="border-2 border-ink bg-ink p-3 pr-20 text-xs font-mono text-paper overflow-x-auto">{{ installCommand }}</pre>
+                  <button @click="copyInstallCommand" class="absolute top-2 right-2 border-2 border-ink bg-accent-2 px-2 py-1 text-xs font-bold uppercase brutal-sm brutal-press">Copy</button>
+                </div>
+                <p class="mt-1.5 text-xs text-ink-soft">Jalankan di PowerShell (Admin) di server target</p>
               </div>
-              <button @click="showCreate = false" class="mt-4 w-full border-2 border-ink bg-white px-4 py-2 text-sm font-bold uppercase brutal-sm brutal-press">Selesai</button>
+
+              <div class="mt-4">
+                <label class="swiss-label">2. Registration Token (kalau perlu manual)</label>
+                <div class="relative mt-2">
+                  <pre class="border-2 border-ink bg-paper p-3 pr-20 text-xs font-mono text-ink overflow-x-auto">{{ generatedToken }}</pre>
+                  <button @click="copyToken" class="absolute top-2 right-2 border-2 border-ink bg-white px-2 py-1 text-xs font-bold uppercase brutal-sm brutal-press">Copy</button>
+                </div>
+              </div>
+
+              <button @click="showCreate = false" class="mt-5 w-full border-2 border-ink bg-accent-2 px-4 py-3 text-sm font-bold uppercase brutal-sm brutal-press">Selesai</button>
             </div>
             <!-- Form -->
             <form v-else @submit.prevent="createServer" class="space-y-4">
