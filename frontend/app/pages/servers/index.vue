@@ -48,7 +48,7 @@ const copyToken = () => navigator.clipboard.writeText(generatedToken.value)
 
 const installCommand = computed(() => {
   if (!generatedToken.value) return ''
-  return `iwr -Uri https://sentraguard.mastolongin.web.id/download/agent -OutFile agent.exe; .\\agent.exe install ${generatedToken.value}`
+  return `iwr -Uri https://sentraguard.mastolongin.web.id/download/agent -OutFile agent.exe; .\\agent.exe install --server https://sentraguard.mastolongin.web.id --token ${generatedToken.value}`
 })
 
 const copyInstallCommand = () => navigator.clipboard.writeText(installCommand.value)
