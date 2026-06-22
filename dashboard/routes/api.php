@@ -76,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('servers/{server}/firewall', [ServerApiController::class, 'firewallRules']);
     Route::post('servers/{server}/firewall', [ServerApiController::class, 'createFirewallRule']);
     Route::patch('servers/{server}/firewall/{rule}/toggle', [ServerApiController::class, 'toggleFirewallRule']);
+    Route::post('servers/{server}/firewall/toggle', [ServerApiController::class, 'toggleFirewall']);
     Route::delete('servers/{server}/firewall/{rule}', [ServerApiController::class, 'deleteFirewallRule']);
 
     // Commands queue (global)

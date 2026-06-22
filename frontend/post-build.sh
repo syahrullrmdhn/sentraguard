@@ -1,0 +1,56 @@
+#!/bin/bash
+# Post-build script for SentraGuard Nuxt frontend
+# Fixes Nuxt SPA static deployment: generates proper index.html with 
+# window.__NUXT__ inline config. Nuxt 4 SSR=false doesn't auto-generate
+# standalone HTML — the Nitro server handles it, but we serve via nginx.
+
+set -e
+
+PUBLIC_DIR="/var/www/sentraguard/frontend/.output/public"
+NUXT_DIR="$PUBLIC_DIR/_nuxt"
+
+# Get the entry chunk name from precomputed manifest
+# Look for file:"xxx.js" near isEntry:true
+MANIFEST="$PUBLIC_DIR/../server/chunks/build/client.precomputed.mjs"
+ENTRY=$(grep -oP 'file:"[^"]+\.js".*?isEntry:true' "$MANIFEST" | grep -oP 'file:"\K[^"]+' | head -1)
+
+if [ -z "$ENTRY" ]; then
+  echo "ERROR: Could not find entry chunk in precomputed manifest"
+  exit 1
+fi
+
+# Get build ID
+BUILD_ID=$(ls "$NUXT_DIR/builds/meta/" | head -1 | sed 's/\.json//')
+
+if [ -z "$BUILD_ID" ]; then
+  echo "ERROR: Could not find build ID"
+  exit 1
+fi
+
+echo "Entry: $ENTRY"
+echo "Build ID: $BUILD_ID"
+
+# Generate proper index.html with window.__NUXT__ inline config
+cat > "$PUBLIC_DIR/index.html" << EOF
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SentraGuard AgentOps Console</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" />
+  <link rel="stylesheet" href="/_nuxt/entry.ja59q-bY.css" />
+</head>
+<body>
+  <div id="__nuxt"></div>
+  <script>window.__NUXT__={config:{app:{baseURL:"/",buildAssetsDir:"/_nuxt/",cdnURL:"",buildId:"${BUILD_ID}"},public:{apiBase:""}},serverRendered:false}</script>
+  <script type="module" src="/_nuxt/${ENTRY}"></script>
+</body>
+</html>
+EOF
+
+# Also create 200.html for SPA fallback
+cp "$PUBLIC_DIR/index.html" "$PUBLIC_DIR/200.html"
+
+chmod 644 "$PUBLIC_DIR/index.html" "$PUBLIC_DIR/200.html"
+echo "✅ Generated index.html + 200.html"

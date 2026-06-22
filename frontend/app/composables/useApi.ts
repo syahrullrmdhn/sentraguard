@@ -3,10 +3,12 @@ import { useRuntimeConfig } from '#imports'
 /**
  * Authenticated API client wrapper around $fetch.
  * Always sends cookies + XSRF token so Sanctum SPA auth works for every call.
+ *
+ * apiBase is '' (empty) = same-origin. Nginx proxies /api to Laravel.
  */
+const apiBase = ''
+
 export const useApi = () => {
-  const config = useRuntimeConfig()
-  const apiBase = config.public.apiBase as string
 
   const getCookie = (name: string): string => {
     if (!import.meta.client) return ''

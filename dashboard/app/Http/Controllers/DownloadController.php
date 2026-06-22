@@ -12,8 +12,13 @@ class DownloadController extends Controller
      */
     public function agent(): BinaryFileResponse
     {
-        // Agent lives in ../agent/ (sibling of dashboard/)
-        $path = dirname(base_path()) . '/agent/build/sentraguard-agent.exe';
+        // In Docker: mounted at public/download, bare metal: ../agent/build
+        $path = public_path('download/sentraguard-agent.exe');
+        
+        if (!file_exists($path)) {
+            // Fallback to bare metal path
+            $path = dirname(base_path()) . '/agent/build/sentraguard-agent.exe';
+        }
 
         abort_unless(file_exists($path), 404, 'Agent binary not found. Build the agent first.');
 

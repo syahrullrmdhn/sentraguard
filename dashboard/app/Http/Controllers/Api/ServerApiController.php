@@ -389,6 +389,35 @@ class ServerApiController extends Controller
     }
 
     /**
+     * POST /api/servers/{server}/firewall/toggle — enable/disable seluruh firewall
+     */
+    public function toggleFirewall(Server $server, AuditService $audit, CommandService $commands): JsonResponse
+    {
+        $newState = ! $server->firewall_enabled;
+        $server->update(['firewall_enabled' => $newState]);
+
+        $audit->userAction(
+            action: 'firewall.toggled',
+            resourceType: 'server',
+            resourceId: (string) $server->id,
+            description: ($newState ? 'Enabled' : 'Disabled')." firewall for {$server->name}",
+            serverId: $server->id,
+        );
+
+        // Queue command to agent
+        $commands->queueRaw(
+            server: $server,
+            action: $newState ? 'firewall_enable_all' : 'firewall_disable_all',
+            userId: auth()->id(),
+        );
+
+        return response()->json([
+            'firewall_enabled' => $newState,
+            'message' => $newState ? 'Firewall di-enable. Agent akan mengaktifkan Windows Firewall.' : 'Firewall di-disable. Agent akan mematikan Windows Firewall.',
+        ]);
+    }
+
+    /**
      * Shape a server for the SPA.
      */
     protected function serverPayload(Server $server, bool $detail = false): array
@@ -415,6 +444,7 @@ class ServerApiController extends Controller
                 'registered_at' => $agent->registered_at,
             ] : null,
             'connection_status' => (! $agent || ! $agent->last_heartbeat_at) ? 'waiting connection' : $agent->status,
+            'firewall_enabled' => $server->firewall_enabled,
             'update_available' => $currentVersion ? version_compare($currentVersion, $latestVersion, '<') : false,
             'latest_version' => $latestVersion,
         ];

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const api = useApi()
+const modal = useModal()
 const search = ref('')
 const roleFilter = ref('')
 
@@ -47,12 +48,13 @@ const save = async () => {
   }
 }
 const remove = async (u: any) => {
-  if (!confirm(`Hapus user "${u.name}"?`)) return
+  const ok = await modal.openConfirm(`Hapus user "${u.name}"? Tindakan ini permanen.`)
+  if (!ok) return
   try {
     await api.del(`/api/users/${u.id}`)
     await refresh()
   } catch (e: any) {
-    alert(e?.data?.message || 'Gagal menghapus.')
+    modal.openAlert(e?.data?.message || 'Gagal menghapus.')
   }
 }
 </script>
@@ -120,6 +122,41 @@ const remove = async (u: any) => {
               {{ saving ? 'Menyimpan...' : 'Simpan' }}
             </button>
           </form>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Confirm Modal (brutal) -->
+    <Teleport to="body">
+      <div v-if="modal.confirmShow.value" class="fixed inset-0 z-[60] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
+        <div class="animate-slide-up w-full max-w-md border-2 border-ink bg-white shadow-brutal-lg">
+          <div class="flex items-center justify-between border-b-2 border-ink bg-accent-2 px-5 py-3">
+            <h3 class="text-sm font-bold uppercase tracking-wide text-ink">Konfirmasi</h3>
+            <button @click="modal.onConfirmCancel()" class="text-2xl leading-none text-ink hover:text-danger">&times;</button>
+          </div>
+          <div class="p-5">
+            <p class="text-sm text-ink mb-6">{{ modal.confirmMessage.value }}</p>
+            <div class="flex justify-end gap-2">
+              <button @click="modal.onConfirmCancel()" class="border-2 border-ink bg-white px-4 py-2 text-sm font-bold uppercase text-ink hover:bg-paper brutal-sm">Batal</button>
+              <button @click="modal.onConfirmOK()" class="border-2 border-ink bg-accent-2 px-4 py-2 text-sm font-bold uppercase text-ink hover:bg-accent hover:text-white brutal-sm brutal-press">Ya, Lanjutkan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert Modal (brutal) -->
+      <div v-if="modal.alertShow.value" class="fixed inset-0 z-[60] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
+        <div class="animate-slide-up w-full max-w-md border-2 border-ink bg-white shadow-brutal-lg">
+          <div class="flex items-center justify-between border-b-2 border-ink bg-accent-2 px-5 py-3">
+            <h3 class="text-sm font-bold uppercase tracking-wide text-ink">Info</h3>
+            <button @click="modal.onAlertClose()" class="text-2xl leading-none text-ink hover:text-danger">&times;</button>
+          </div>
+          <div class="p-5">
+            <p class="text-sm text-ink mb-6">{{ modal.alertMessage.value }}</p>
+            <div class="flex justify-end">
+              <button @click="modal.onAlertClose()" class="border-2 border-ink bg-accent-2 px-6 py-2 text-sm font-bold uppercase text-ink hover:bg-accent hover:text-white brutal-sm brutal-press">OK</button>
+            </div>
+          </div>
         </div>
       </div>
     </Teleport>

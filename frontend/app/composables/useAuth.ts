@@ -1,4 +1,4 @@
-import { useRuntimeConfig, useState } from '#imports'
+import { useState } from '#imports'
 
 interface User {
   id: number
@@ -15,10 +15,13 @@ interface User {
  *   1. GET /sanctum/csrf-cookie  -> sets XSRF-TOKEN cookie
  *   2. POST /api/auth/login      -> sets session cookie
  *   3. Subsequent requests send cookies + X-XSRF-TOKEN header automatically
+ *
+ * apiBase is '' (empty) = same-origin. Nginx proxies /api, /sanctum, etc.
+ * to Laravel backend, so relative URLs work without cross-origin issues.
  */
+const apiBase = ''
+
 export const useAuth = () => {
-  const config = useRuntimeConfig()
-  const apiBase = config.public.apiBase as string
   const user = useState<User | null>('auth_user', () => null)
 
   /** Read a cookie value by name (browser only). */

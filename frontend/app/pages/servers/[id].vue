@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const api = useApi()
+const modal = useModal()
 const id = route.params.id as string
 
 const tab = ref<'overview' | 'metrics' | 'services' | 'firewall' | 'commands'>('overview')
@@ -265,16 +266,39 @@ const copyScript = () => {
   setTimeout(() => (copyLabel.value = 'Copy Script'), 2000)
 }
 
+// ---- Install script for new agents (tunnel-like) ----
+const showInstall = ref(false)
+const installScript = ref('')
+const installLoading = ref(false)
+const installCopyLabel = ref('Copy Command')
+
+const openInstall = async () => {
+  showInstall.value = true
+  installLoading.value = true
+  try {
+    const r = await api.get<any>(`/api/servers/${id}/update-script`)
+    installScript.value = r.script
+  } finally {
+    installLoading.value = false
+  }
+}
+const copyInstall = () => {
+  navigator.clipboard.writeText(installScript.value)
+  installCopyLabel.value = 'Copied!'
+  setTimeout(() => (installCopyLabel.value = 'Copy Command'), 2000)
+}
+
 const triggerUpdate = async () => {
-  if (!confirm('Update agent sekarang? Agent akan restart otomatis dalam ~60 detik.')) return
+  const ok = await modal.openConfirm('Update agent sekarang? Agent akan restart otomatis dalam ~60 detik.')
+  if (!ok) return
   
   updateLoading.value = true
   try {
     await api.post(`/api/servers/${id}/update-agent`)
-    alert('Update command berhasil di-queue! Cek tab Commands untuk status.')
+    modal.openAlert('Update command berhasil di-queue! Cek tab Commands untuk status.')
     await loadCommands()
   } catch (e: any) {
-    alert(e?.data?.message || 'Gagal queue update.')
+    modal.openAlert(e?.data?.message || 'Gagal queue update.')
   } finally {
     updateLoading.value = false
   }
@@ -290,13 +314,24 @@ const runAction = async (svc: any, action: string) => {
     await api.post(`/api/servers/${id}/services/${svc.id}/action`, { action })
     await loadCommands()
   } catch (e: any) {
-    alert(e?.data?.message || 'Gagal queue command.')
+    modal.openAlert(e?.data?.message || 'Gagal queue command.')
   }
 }
 
 // ---- Firewall actions ----
+const firewallEnabled = ref(server.value?.firewall_enabled ?? true)
 const showAddRule = ref(false)
 const newRule = ref({ rule_name: '', direction: 'inbound', protocol: 'tcp', port: '', action: 'allow', description: '' })
+
+const toggleFirewall = async () => {
+  try {
+    const r = await api.post<any>(`/api/servers/${id}/firewall/toggle`)
+    firewallEnabled.value = r.firewall_enabled
+    modal.openAlert(r.message)
+  } catch (e: any) {
+    modal.openAlert(e?.data?.message || 'Gagal toggle firewall.')
+  }
+}
 
 const toggleFirewallRule = async (rule: any) => {
   await api.patch(`/api/servers/${id}/firewall/${rule.id}/toggle`)
@@ -304,7 +339,8 @@ const toggleFirewallRule = async (rule: any) => {
 }
 
 const deleteFirewallRule = async (rule: any) => {
-  if (!confirm(`Hapus rule "${rule.rule_name}"?`)) return
+  const ok = await modal.openConfirm(`Hapus rule "${rule.rule_name}"?`)
+  if (!ok) return
   await api.delete(`/api/servers/${id}/firewall/${rule.id}`)
   await loadFirewall()
 }
@@ -316,7 +352,7 @@ const createFirewallRule = async () => {
     newRule.value = { rule_name: '', direction: 'inbound', protocol: 'tcp', port: '', action: 'allow', description: '' }
     await loadFirewall()
   } catch (e: any) {
-    alert(e?.data?.message || 'Gagal buat rule.')
+    modal.openAlert(e?.data?.message || 'Gagal buat rule.')
   }
 }
 
@@ -356,6 +392,20 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
           <div v-for="[label, value] in infoCards" :key="label" class="brutal bg-white p-4">
             <p class="swiss-label">{{ label }}</p>
             <p class="mt-1.5 text-sm font-semibold text-ink break-words">{{ value }}</p>
+          </div>
+        </div>
+
+        <!-- Install script for new agents -->
+        <div v-if="server.connection_status === 'waiting connection'" class="mt-6 border-2 border-accent bg-accent/5 p-6 shadow-brutal">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex-1">
+              <h3 class="text-base font-bold uppercase tracking-wide text-ink">⚡ Install Agent — Windows</h3>
+              <p class="mt-2 text-sm text-ink-soft">Agent belum terhubung. Copy command di bawah, buka <strong>PowerShell as Administrator</strong> di Windows, paste, lalu Enter.</p>
+              <p class="mt-1 text-xs text-ink-soft">Mirip <code class="border border-ink bg-white px-1 py-0.5 font-mono text-xs">cloudflared access configure</code>. Satu kali copy-paste, langsung jalan.</p>
+            </div>
+            <button @click="openInstall" class="border-2 border-ink bg-accent-2 px-6 py-3 text-sm font-bold uppercase tracking-wide text-ink transition hover:bg-accent hover:text-white brutal brutal-press">
+              📋 Copy Install Command
+            </button>
           </div>
         </div>
 
@@ -509,9 +559,14 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
       <div v-else-if="tab === 'firewall'">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-sm font-bold uppercase text-ink-soft">Firewall Rules</h3>
-          <button @click="showAddRule = true" class="border-2 border-ink bg-accent-2 px-3 py-1.5 text-xs font-bold uppercase text-ink brutal-sm hover:opacity-80">
-            + Tambah Rule
-          </button>
+          <div class="flex items-center gap-3">
+            <button @click="toggleFirewall" class="flex items-center gap-2 border-2 border-ink px-4 py-2 text-xs font-bold uppercase tracking-wide brutal-sm hover:opacity-80 transition" :class="firewallEnabled ? 'bg-ok text-white' : 'bg-danger text-white'">
+              <span>{{ firewallEnabled ? '🛡️ Firewall ON' : '🔓 Firewall OFF' }}</span>
+            </button>
+            <button @click="showAddRule = true" class="border-2 border-ink bg-accent-2 px-3 py-1.5 text-xs font-bold uppercase text-ink brutal-sm hover:opacity-80">
+              + Tambah Rule
+            </button>
+          </div>
         </div>
 
         <div v-if="!firewallRules.length" class="text-sm text-ink-soft">Belum ada firewall rule.</div>
@@ -617,6 +672,30 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
           </div>
         </div>
       </div>
+    </Teleport>
+
+    <!-- Install script modal (tunnel-like) -->
+      <div v-if="showInstall" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
+        <div class="animate-slide-up w-full max-w-3xl border-2 border-ink bg-white shadow-brutal-lg">
+          <div class="flex items-center justify-between border-b-2 border-ink bg-accent-2 px-5 py-3">
+            <h3 class="text-sm font-bold uppercase tracking-wide text-ink">⚡ Install Agent Command</h3>
+            <button @click="showInstall = false" class="text-2xl leading-none text-ink hover:text-danger">&times;</button>
+          </div>
+          <div class="p-5 max-h-[70vh] overflow-y-auto">
+            <div class="mb-4 border-l-4 border-ok bg-ok/10 pl-3 py-2 text-sm">
+              <strong>PowerShell as Administrator → paste → Enter.</strong> Agent akan auto-download, install, dan daftar dalam ~30 detik.
+            </div>
+            <div v-if="installLoading" class="text-sm text-ink-soft">Generating command...</div>
+            <div v-else class="relative">
+              <pre class="border-2 border-ink bg-ink p-4 text-xs font-mono text-paper overflow-x-auto" style="max-height: 400px;">{{ installScript }}</pre>
+              <button @click="copyInstall" class="absolute top-2 right-2 border-2 border-ink bg-accent-2 px-3 py-1.5 text-xs font-bold uppercase text-ink hover:bg-accent hover:text-white brutal-sm">{{ installCopyLabel }}</button>
+            </div>
+          </div>
+          <div class="border-t-2 border-ink bg-paper px-5 py-3 flex justify-end">
+            <button @click="showInstall = false" class="border-2 border-ink bg-white px-4 py-2 text-sm font-bold uppercase brutal-sm brutal-press">Tutup</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Tambah Rule modal -->
       <div v-if="showAddRule" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
@@ -670,6 +749,39 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
           <div class="border-t-2 border-ink bg-paper px-5 py-3 flex justify-end gap-2">
             <button @click="showAddRule = false" class="border-2 border-ink bg-white px-4 py-2 text-sm font-bold uppercase brutal-sm hover:bg-paper">Batal</button>
             <button @click="createFirewallRule" class="border-2 border-ink bg-accent-2 px-4 py-2 text-sm font-bold uppercase text-ink brutal-sm brutal-press hover:bg-accent hover:text-white">Buat Rule</button>
+          </div>
+        </div>
+      </div>
+    <!-- Confirm Modal (brutal) -->
+    <Teleport to="body">
+      <div v-if="modal.confirmShow.value" class="fixed inset-0 z-[60] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
+        <div class="animate-slide-up w-full max-w-md border-2 border-ink bg-white shadow-brutal-lg">
+          <div class="flex items-center justify-between border-b-2 border-ink bg-accent-2 px-5 py-3">
+            <h3 class="text-sm font-bold uppercase tracking-wide text-ink">Konfirmasi</h3>
+            <button @click="modal.onConfirmCancel()" class="text-2xl leading-none text-ink hover:text-danger">&times;</button>
+          </div>
+          <div class="p-5">
+            <p class="text-sm text-ink mb-6">{{ modal.confirmMessage.value }}</p>
+            <div class="flex justify-end gap-2">
+              <button @click="modal.onConfirmCancel()" class="border-2 border-ink bg-white px-4 py-2 text-sm font-bold uppercase text-ink hover:bg-paper brutal-sm">Batal</button>
+              <button @click="modal.onConfirmOK()" class="border-2 border-ink bg-accent-2 px-4 py-2 text-sm font-bold uppercase text-ink hover:bg-accent hover:text-white brutal-sm brutal-press">Ya, Lanjutkan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert Modal (brutal) -->
+      <div v-if="modal.alertShow.value" class="fixed inset-0 z-[60] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);">
+        <div class="animate-slide-up w-full max-w-md border-2 border-ink bg-white shadow-brutal-lg">
+          <div class="flex items-center justify-between border-b-2 border-ink bg-accent-2 px-5 py-3">
+            <h3 class="text-sm font-bold uppercase tracking-wide text-ink">Info</h3>
+            <button @click="modal.onAlertClose()" class="text-2xl leading-none text-ink hover:text-danger">&times;</button>
+          </div>
+          <div class="p-5">
+            <p class="text-sm text-ink mb-6">{{ modal.alertMessage.value }}</p>
+            <div class="flex justify-end">
+              <button @click="modal.onAlertClose()" class="border-2 border-ink bg-accent-2 px-6 py-2 text-sm font-bold uppercase text-ink hover:bg-accent hover:text-white brutal-sm brutal-press">OK</button>
+            </div>
           </div>
         </div>
       </div>
