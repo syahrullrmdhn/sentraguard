@@ -78,6 +78,40 @@ class ServerApiController extends Controller
     }
 
     /**
+     * PATCH /api/servers/{server} — update server properties.
+     */
+    public function update(Request $request, Server $server, AuditService $audit): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['sometimes', 'string', 'max:255'],
+            'environment' => ['sometimes', 'in:production,staging,development,testing'],
+        ]);
+
+        $changes = [];
+        foreach ($data as $key => $value) {
+            if ($server->{$key} !== $value) {
+                $changes[$key] = ['old' => $server->{$key}, 'new' => $value];
+            }
+        }
+
+        if (!empty($changes)) {
+            $server->update($data);
+
+            $audit->userAction(
+                action: 'server.update',
+                resourceType: 'server',
+                resourceId: (string) $server->id,
+                description: "Updated server {$server->name}: " . json_encode($changes),
+                serverId: $server->id,
+            );
+        }
+
+        return response()->json([
+            'server' => $this->serverPayload($server->fresh()),
+        ]);
+    }
+
+    /**
      * DELETE /api/servers/{server} — hard delete.
      */
     public function destroy(Server $server, AuditService $audit): JsonResponse

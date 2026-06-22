@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('servers/{server}', [ServerApiController::class, 'show']);
     Route::delete('servers/{server}', [ServerApiController::class, 'destroy']);
     Route::post('servers', [ServerApiController::class, 'store']);
+    Route::patch('servers/{server}', [ServerApiController::class, 'update']);
     Route::get('servers/{server}/metrics', [ServerApiController::class, 'metrics']);
     Route::get('servers/{server}/services', [ServerApiController::class, 'services']);
     Route::get('servers/{server}/commands', [ServerApiController::class, 'commands']);

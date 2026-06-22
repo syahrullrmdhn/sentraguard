@@ -22,6 +22,8 @@ class CommandService
         'firewall_enable_rule',
         'firewall_disable_rule',
         'firewall_delete_rule',
+        'firewall_enable_all',
+        'firewall_disable_all',
         'firewall_sync',
     ];
 
