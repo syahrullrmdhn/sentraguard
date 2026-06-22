@@ -88,7 +88,12 @@ const chartData = computed(() => {
   if (!metrics.value?.history) return null
   
   const history = metrics.value.history || []
-  const labels = history.map((m: any) => new Date(m.recorded_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }))
+  const labels = history.map((m: any) => {
+    if (!m.recorded_at) return '--:--'
+    const date = new Date(m.recorded_at)
+    if (isNaN(date.getTime())) return '--:--'
+    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  })
   const cpuData = history.map((m: any) => m.cpu_percent ?? 0)
   const ramData = history.map((m: any) => {
     const total = m.ram_total_mb || 1
@@ -496,7 +501,7 @@ const barColor = (p: number) => (p > 85 ? 'bg-danger' : p > 60 ? 'bg-accent-2' :
                     <th class="px-5 py-3">Service</th>
                     <th class="px-5 py-3">Status</th>
                     <th class="px-5 py-3">Startup</th>
-                    <th class="px-5 py-3">Allowed</th>
+                    <th class="px-5 py-3">Remote Control</th>
                     <th class="px-5 py-3 text-right">Aksi</th>
                   </tr>
                 </thead>
