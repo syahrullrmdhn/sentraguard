@@ -443,6 +443,7 @@ class ServerApiController extends Controller
             server: $server,
             command: $newState ? 'firewall_enable_all' : 'firewall_disable_all',
             userId: auth()->id(),
+            payload: [], // Empty payload for toggle all
         );
 
         return response()->json([

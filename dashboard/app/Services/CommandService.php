@@ -93,7 +93,8 @@ class CommandService
         Server $server,
         string $command,
         ?int $userId = null,
-        ?int $timeoutSeconds = null
+        ?int $timeoutSeconds = null,
+        array $payload = []
     ): ServiceCommand {
         if (! in_array($command, self::ALLOWED_ACTIONS, true)) {
             throw new \InvalidArgumentException("Invalid command: {$command}");
@@ -105,8 +106,9 @@ class CommandService
             'service_name' => '', // Empty for non-service commands
             'action' => $command,
             'status' => 'pending',
-            'timeout_seconds' => $timeoutSeconds ?? config('agent.command_timeout', 60),
-            'requested_at' => now(),
+            'timeout_seconds' => $timeoutSeconds ?? 60,
+            'payload' => !empty($payload) ? json_encode($payload) : null,
+        ]);
         ]);
 
         $this->audit->userAction(
