@@ -190,7 +190,7 @@ class ServerApiController extends Controller
      */
     public function updateScript(Server $server, AgentTokenService $tokens): JsonResponse
     {
-        $latestVersion = config('agent.latest_version', '1.0.6');
+        $latestVersion = config('agent.latest_version', '1.0.8');
         $downloadUrl = config('agent.download_url', url('/download/agent'));
         $serverUrl = config('app.url');
         $token = $tokens->generateRegistrationToken($server);
@@ -458,7 +458,7 @@ class ServerApiController extends Controller
     protected function serverPayload(Server $server, bool $detail = false): array
     {
         $agent = $server->agent;
-        $latestVersion = config('agent.latest_version', '1.0.6');
+        $latestVersion = config('agent.latest_version', '1.0.8');
         $currentVersion = $agent->agent_version ?? null;
 
         return [
