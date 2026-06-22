@@ -76,3 +76,23 @@ func (m *Manager) DeleteRule(ruleName string) error {
 	}
 	return nil
 }
+
+// EnableAll enables Windows Firewall for all profiles
+func (m *Manager) EnableAll() error {
+	cmd := exec.Command("netsh", "advfirewall", "set", "allprofiles", "state", "on")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("netsh enable firewall failed: %w, output: %s", err, output)
+	}
+	return nil
+}
+
+// DisableAll disables Windows Firewall for all profiles
+func (m *Manager) DisableAll() error {
+	cmd := exec.Command("netsh", "advfirewall", "set", "allprofiles", "state", "off")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("netsh disable firewall failed: %w, output: %s", err, output)
+	}
+	return nil
+}

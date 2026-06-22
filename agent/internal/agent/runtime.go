@@ -207,6 +207,10 @@ func (r *Runtime) executeFirewallCommand(cmd *api.Command) (executor.Result, err
 		err = r.firewall.DisableRule(ruleName)
 	case "firewall_delete_rule":
 		err = r.firewall.DeleteRule(ruleName)
+	case "firewall_enable_all":
+		err = r.firewall.EnableAll()
+	case "firewall_disable_all":
+		err = r.firewall.DisableAll()
 	default:
 		return executor.Result{Status: "failed", ExitCode: -1, Stderr: "Unknown firewall action"}, nil
 	}

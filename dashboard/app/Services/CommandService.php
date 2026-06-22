@@ -109,7 +109,6 @@ class CommandService
             'timeout_seconds' => $timeoutSeconds ?? 60,
             'payload' => !empty($payload) ? json_encode($payload) : null,
         ]);
-        ]);
 
         $this->audit->userAction(
             action: 'command.queue',

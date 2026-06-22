@@ -1,6 +1,6 @@
 module github.com/syahrullrmdhn/sentraguard/agent
 
-go 1.25.0
+go 1.23
 
 require (
 	github.com/billgraziano/dpapi v0.5.0
