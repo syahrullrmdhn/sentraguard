@@ -19,6 +19,13 @@ if [ -z "$ENTRY" ]; then
   exit 1
 fi
 
+# Get CSS entry file (look for entry.*.css in _nuxt dir)
+CSS_ENTRY=$(ls "$NUXT_DIR"/entry.*.css 2>/dev/null | head -1 | xargs basename)
+
+if [ -z "$CSS_ENTRY" ]; then
+  echo "WARNING: Could not find entry CSS file"
+fi
+
 # Get build ID
 BUILD_ID=$(ls "$NUXT_DIR/builds/meta/" | head -1 | sed 's/\.json//')
 
@@ -28,6 +35,7 @@ if [ -z "$BUILD_ID" ]; then
 fi
 
 echo "Entry: $ENTRY"
+echo "CSS: $CSS_ENTRY"
 echo "Build ID: $BUILD_ID"
 
 # Generate proper index.html with window.__NUXT__ inline config
@@ -39,7 +47,7 @@ cat > "$PUBLIC_DIR/index.html" << EOF
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SentraGuard AgentOps Console</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" />
-  <link rel="stylesheet" href="/_nuxt/entry.ja59q-bY.css" />
+  <link rel="stylesheet" href="/_nuxt/${CSS_ENTRY}" />
 </head>
 <body>
   <div id="__nuxt"></div>
