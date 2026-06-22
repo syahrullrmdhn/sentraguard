@@ -17,7 +17,7 @@ class AuthApiController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
-        $credentials = $request->validate([
+        $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
             'cf_turnstile_response' => ['required', 'string'],
@@ -31,6 +31,8 @@ class AuthApiController extends Controller
             ]);
         }
 
+        // Only email + password for Auth::attempt
+        $credentials = $request->only(['email', 'password']);
         $remember = $request->boolean('remember');
 
         if (! Auth::attempt($credentials, $remember)) {
