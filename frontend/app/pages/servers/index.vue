@@ -148,7 +148,15 @@ const statusBadge = (s: any) => {
               </div>
               
               <div class="mt-4">
-                <label class="swiss-label">1. Install Agent di Windows Server</label>
+                <label class="swiss-label">Opsi 1: GUI Installer (Recommended)</label>
+                <p class="mt-1.5 text-xs text-ink-soft mb-2">Download installer dengan antarmuka grafis, tinggal paste token.</p>
+                <a :href="`${$config.public.apiBase}/download/SentraGuardInstaller.exe`" download class="inline-flex items-center gap-2 border-2 border-ink bg-accent px-3 py-2 text-sm font-bold uppercase text-white brutal-sm brutal-press hover:bg-accent-2 hover:text-ink">
+                  <span>⬇</span> Download GUI Installer
+                </a>
+              </div>
+
+              <div class="mt-4">
+                <label class="swiss-label">Opsi 2: PowerShell Command (Advanced)</label>
                 <div class="relative mt-2">
                   <pre class="border-2 border-ink bg-ink p-3 pr-20 text-xs font-mono text-paper overflow-x-auto">{{ installCommand }}</pre>
                   <button @click="copyInstallCommand" class="absolute top-2 right-2 border-2 border-ink bg-accent-2 px-2 py-1 text-xs font-bold uppercase brutal-sm brutal-press">Copy</button>
@@ -157,7 +165,7 @@ const statusBadge = (s: any) => {
               </div>
 
               <div class="mt-4">
-                <label class="swiss-label">2. Registration Token (kalau perlu manual)</label>
+                <label class="swiss-label">Registration Token</label>
                 <div class="relative mt-2">
                   <pre class="border-2 border-ink bg-paper p-3 pr-20 text-xs font-mono text-ink overflow-x-auto">{{ generatedToken }}</pre>
                   <button @click="copyToken" class="absolute top-2 right-2 border-2 border-ink bg-white px-2 py-1 text-xs font-bold uppercase brutal-sm brutal-press">Copy</button>
