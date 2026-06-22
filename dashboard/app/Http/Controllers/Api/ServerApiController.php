@@ -211,8 +211,8 @@ class ServerApiController extends Controller
         try {
             $commands->queueRaw(
                 server: $server,
-                action: 'update',
-                userId: $request->user()->id,
+                command: 'update',
+                userId: auth()->id(),
             );
 
             $audit->userAction(
@@ -308,8 +308,8 @@ class ServerApiController extends Controller
         // Queue command to agent
         $commands->queueRaw(
             server: $server,
-            action: 'firewall_add_rule',
-            userId: $request->user()->id,
+            command: 'firewall_add_rule',
+            userId: auth()->id(),
             payload: [
                 'rule_id' => $rule->id,
                 'rule_name' => $rule->rule_name,
@@ -343,7 +343,7 @@ class ServerApiController extends Controller
         // Queue command to agent
         $commands->queueRaw(
             server: $server,
-            action: $rule->is_enabled ? 'firewall_enable_rule' : 'firewall_disable_rule',
+            command: $rule->is_enabled ? 'firewall_enable_rule' : 'firewall_disable_rule',
             userId: auth()->id(),
             payload: [
                 'rule_id' => $rule->id,
@@ -367,7 +367,7 @@ class ServerApiController extends Controller
         // Queue command to agent BEFORE deleting DB record
         $commands->queueRaw(
             server: $server,
-            action: 'firewall_delete_rule',
+            command: 'firewall_delete_rule',
             userId: auth()->id(),
             payload: [
                 'rule_id' => $ruleId,
@@ -407,7 +407,7 @@ class ServerApiController extends Controller
         // Queue command to agent
         $commands->queueRaw(
             server: $server,
-            action: $newState ? 'firewall_enable_all' : 'firewall_disable_all',
+            command: $newState ? 'firewall_enable_all' : 'firewall_disable_all',
             userId: auth()->id(),
         );
 
