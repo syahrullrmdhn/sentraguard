@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentraGuard Agent Installer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .alert-error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c33;
+        }
+        .alert-success {
+            background: #efe;
+            border: 2px solid #cfc;
+            color: #363;
+        }
+        .alert-info {
+            background: #eef;
+            border: 2px solid #ccf;
+            color: #336;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #666;
+        }
+        .close-link {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .close-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .close-link a:hover {
+            text-decoration: underline;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ SentraGuard Agent Installer</h1>
+        <p class="subtitle">Install monitoring agent on this Windows server</p>
+
+        {{if .Success}}
+        <div class="alert alert-success">
+            <strong>✓ Installation Successful!</strong><br>
+            SentraGuard agent has been installed and will start monitoring this server shortly.
+        </div>
+        <div class="close-link">
+            <a href="/shutdown">Close Installer</a>
+        </div>
+        {{else if .Error}}
+        <div class="alert alert-error">
+            <strong>✗ Installation Failed</strong><br>
+            {{.Error}}
+        </div>
+        {{end}}
+
+        {{if .Status}}
+        <div class="status">
+            <strong>Status:</strong> {{.Status}}
+        </div>
+        {{end}}
+
+        {{if not .Success}}
+        <form method="POST" action="/install" id="installForm">
+            <div class="form-group">
+                <label for="server">Server URL</label>
+                <input type="text" id="server" name="server" value="{{.ServerURL}}" required placeholder="https://your-server.com">
+            </div>
+
+            <div class="form-group">
+                <label for="token">Registration Token</label>
+                <input type="text" id="token" name="token" value="{{.Token}}" required placeholder="AGT_xxx..." style="font-family: monospace;">
+                <small style="color: #999; font-size: 12px; display: block; margin-top: 5px;">
+                    Get this token from your SentraGuard console when adding a new server
+                </small>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                Install Agent
+            </button>
+        </form>
+        {{end}}
+    </div>
+
+    <script>
+        document.getElementById('installForm')?.addEventListener('submit', function(e) {
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = '<span class="spinner"></span>Installing...';
+            btn.disabled = true;
+        });
+    </script>
+</body>
+</html>
